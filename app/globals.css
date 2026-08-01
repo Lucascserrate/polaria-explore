@@ -1,26 +1,227 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ---------------------------------------------------------------------------
+   Polaria — design tokens
+   Marca: estrella polar. Base "noche" profunda + azul confiable + aurora sutil.
+   Deliberadamente NO usamos el verde de WhatsApp: la simulación debe evocar
+   una conversación, no clonar una marca de terceros.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Azul de marca — confiable, moderno, no el índigo por defecto */
+  --color-brand-50: #ecf4ff;
+  --color-brand-100: #d7e7ff;
+  --color-brand-200: #b4d2ff;
+  --color-brand-300: #82b4ff;
+  --color-brand-400: #4a8fff;
+  --color-brand-500: #1f6bff;
+  --color-brand-600: #0b50e8;
+  --color-brand-700: #0b3fba;
+  --color-brand-800: #103693;
+  --color-brand-900: #142f73;
+  --color-brand-950: #0e1d46;
+
+  /* Tinta — fondos oscuros (hero, CTA final) */
+  --color-ink-950: #06080f;
+  --color-ink-900: #0a0e18;
+  --color-ink-800: #111726;
+  --color-ink-700: #1a2233;
+  --color-ink-600: #273147;
+  --color-ink-500: #3a4761;
+
+  /* Neutros cálidos — cuerpo de la página */
+  --color-paper-50: #ffffff;
+  --color-paper-100: #fafafa;
+  --color-paper-200: #f4f5f7;
+  --color-paper-300: #e8eaee;
+  --color-paper-400: #d4d8e0;
+
+  /* Aurora — sólo para destellos y degradados, nunca para texto */
+  --color-aurora-violet: #8b5cf6;
+  --color-aurora-cyan: #22d3ee;
+
+  /* Ámbar — "requiere tu atención" (derivación a humano) */
+  --color-attention-50: #fffbeb;
+  --color-attention-100: #fef3c7;
+  --color-attention-400: #fbbf24;
+  --color-attention-500: #f59e0b;
+  --color-attention-700: #b45309;
+
+  /* Verde sobrio — confirmaciones en la agenda. Tono desaturado a propósito
+     para no leerse como el verde de WhatsApp. */
+  --color-confirm-50: #ecfdf5;
+  --color-confirm-100: #d1fae5;
+  --color-confirm-500: #10b981;
+  --color-confirm-600: #059669;
+  --color-confirm-700: #047857;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Curvas compartidas — cualquier animación CSS usa estas */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --animate-bubble-in: bubble-in 0.42s var(--ease-out-soft) both;
+  --animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
+  --animate-slot-fill: slot-fill 0.7s var(--ease-out-soft) both;
+  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
+  --animate-aurora: aurora 18s ease-in-out infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes slot-fill {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(3%, -4%, 0) scale(1.12);
+    opacity: 0.8;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Next 16 ya no sobreescribe scroll-behavior en navegación salvo que se
+       declare explícitamente con este atributo (ver layout.tsx). */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-paper-50);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Foco visible y consistente en toda la página. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-200);
+    color: var(--color-ink-900);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilidades de proyecto
+--------------------------------------------------------------------------- */
+
+/* Sólo visible para lectores de pantalla. La usamos para anunciar cambios de
+   agenda mientras la conversación avanza. */
+@utility sr-only-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Texto con degradado aurora — reservado para una o dos palabras del hero. */
+@utility text-aurora {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-brand-300) 0%,
+    var(--color-aurora-cyan) 45%,
+    var(--color-aurora-violet) 100%
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+/* Borde de 1px con degradado, sin pseudo-elementos frágiles. */
+@utility ring-hairline {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* Malla de puntos muy tenue para las superficies oscuras. */
+@utility bg-starfield {
+  background-image: radial-gradient(
+    circle at center,
+    rgb(255 255 255 / 0.14) 1px,
+    transparent 1px
+  );
+  background-size: 32px 32px;
+}
+
+/* ---------------------------------------------------------------------------
+   Movimiento reducido
+   No desactivamos la simulación: colapsamos duraciones para que la
+   conversación llegue a su estado final de inmediato y siga siendo legible.
+--------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,0 +1,8 @@
+export { Hero } from "@/sections/hero";
+export { Control } from "@/sections/control";
+export { Setup } from "@/sections/setup";
+export { Benefits } from "@/sections/benefits";
+export { Integrations } from "@/sections/integrations";
+export { EarlyAccess } from "@/sections/early-access";
+export { Faq } from "@/sections/faq";
+export { FinalCta } from "@/sections/final-cta";
