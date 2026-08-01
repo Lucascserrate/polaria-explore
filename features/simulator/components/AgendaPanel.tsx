@@ -2,9 +2,8 @@
 
 import { AnimatePresence } from "motion/react";
 import { OwnerNotification } from "@/features/simulator/components/OwnerNotification";
-import type { AgendaSlot } from "@/features/simulator/types";
+import type { AgendaSlot, OwnerAlert } from "@/features/simulator/types";
 import { salon } from "@/features/simulator/data/salon";
-import type { SimulatorApi } from "@/features/simulator/hooks/useSimulator";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,9 +13,16 @@ import { cn } from "@/lib/utils";
  * aparezca acá sola. Sin este panel estaríamos mostrando un chatbot; con él
  * mostramos tiempo libre.
  */
-export function AgendaPanel({ api }: { api: SimulatorApi }) {
-  const { state } = api;
-  const latestAlert = state.alerts[0];
+export function AgendaPanel({
+  agenda,
+  alerts,
+  messageCount,
+}: {
+  agenda: AgendaSlot[];
+  alerts: OwnerAlert[];
+  messageCount: number;
+}) {
+  const latestAlert = alerts[0];
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper-100">
@@ -32,19 +38,19 @@ export function AgendaPanel({ api }: { api: SimulatorApi }) {
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3.5 py-4">
         <ul className="flex flex-col gap-1.5">
-          {state.agenda.map((slot) => (
+          {agenda.map((slot) => (
             <SlotRow key={slot.time} slot={slot} />
           ))}
         </ul>
 
-        {state.alerts.length > 0 && (
+        {alerts.length > 0 && (
           <div className="flex flex-col gap-2">
             <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-ink-500">
               Actividad
             </p>
             <ul className="flex flex-col gap-1.5">
               <AnimatePresence initial={false}>
-                {state.alerts.map((alert) => (
+                {alerts.map((alert) => (
                   <OwnerNotification key={alert.id} alert={alert} />
                 ))}
               </AnimatePresence>
@@ -58,11 +64,8 @@ export function AgendaPanel({ api }: { api: SimulatorApi }) {
       <footer className="border-t border-paper-300 px-4 py-3">
         <p className="text-[0.6875rem] leading-relaxed text-ink-500">
           Esta conversación:{" "}
-          <span className="font-mono tabular-nums text-ink-700">
-            {state.messages.length}
-          </span>{" "}
-          mensajes ·{" "}
-          <span className="font-mono tabular-nums text-ink-700">0</span>{" "}
+          <span className="font-mono tabular-nums text-ink-700">{messageCount}</span>{" "}
+          mensajes · <span className="font-mono tabular-nums text-ink-700">0</span>{" "}
           interrupciones para vos
         </p>
       </footer>
@@ -86,7 +89,8 @@ function SlotRow({ slot }: { slot: AgendaSlot }) {
         "relative flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-inset transition-colors",
         isFree && "border border-dashed border-paper-400 bg-transparent ring-transparent",
         slot.state === "busy" && "bg-white ring-paper-300",
-        isNew && "bg-brand-50 ring-brand-300 motion-safe:animate-[slot-fill_0.7s_var(--ease-out-soft)_both]",
+        isNew &&
+          "bg-brand-50 ring-brand-300 motion-safe:animate-[slot-fill_0.7s_var(--ease-out-soft)_both]",
       )}
     >
       {isNew && (

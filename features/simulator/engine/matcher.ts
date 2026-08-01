@@ -57,9 +57,19 @@ export function matchSlotChoice(input: string, offered: string[]): string | null
   const text = normalizeText(input);
   if (!text) return null;
 
-  // 1. Hora completa: "14:30".
+  // 1. Hora con minutos, en 24h o en 12h: "14:30", "2:30", "9:00".
+  //    Se recorre `offered` en orden, así que un "2:30" no puede quedarse con
+  //    el hueco de las 11:30 antes de llegar al de las 14:30.
   for (const slot of offered) {
-    if (text.includes(slot)) return slot;
+    const [rawHour, minutes] = slot.split(":");
+    const hour = Number(rawHour);
+
+    const forms = new Set([slot, `${hour}:${minutes}`]);
+    if (hour > 12) forms.add(`${hour - 12}:${minutes}`);
+
+    for (const form of forms) {
+      if (text.includes(form)) return slot;
+    }
   }
 
   // 2. Sólo la hora, en formato 24h o 12h: "a las 14", "las 5", "5 pm".

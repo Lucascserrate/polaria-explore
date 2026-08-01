@@ -7,10 +7,31 @@ import { Composer } from "@/features/simulator/components/Composer";
 import { StarGlyph } from "@/components/layout/logo";
 import { salon } from "@/features/simulator/data/salon";
 import { formatClock } from "@/features/simulator/engine/reducer";
-import type { SimulatorApi } from "@/features/simulator/hooks/useSimulator";
+import type { ChatMessage } from "@/features/simulator/types";
 
-export function ChatPanel({ api }: { api: SimulatorApi }) {
-  const { state, draft, setDraft, send, abortAutoplay, isBusy, prefersReduced } = api;
+export function ChatPanel({
+  messages,
+  typing,
+  clock,
+  suggestions,
+  draft,
+  isBusy,
+  prefersReduced,
+  onDraftChange,
+  onSend,
+  onInteract,
+}: {
+  messages: ChatMessage[];
+  typing: boolean;
+  clock: number;
+  suggestions: string[];
+  draft: string;
+  isBusy: boolean;
+  prefersReduced: boolean;
+  onDraftChange: (value: string) => void;
+  onSend: (text: string) => void;
+  onInteract: () => void;
+}) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Seguir la conversación sin arrastrar el scroll de la página.
@@ -21,7 +42,7 @@ export function ChatPanel({ api }: { api: SimulatorApi }) {
       top: element.scrollHeight,
       behavior: prefersReduced ? "auto" : "smooth",
     });
-  }, [state.messages.length, state.typing, prefersReduced]);
+  }, [messages.length, typing, prefersReduced]);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
@@ -39,7 +60,7 @@ export function ChatPanel({ api }: { api: SimulatorApi }) {
         </div>
 
         <span className="shrink-0 font-mono text-xs tabular-nums text-ink-500">
-          {formatClock(state.clock)}
+          {formatClock(clock)}
         </span>
       </header>
 
@@ -60,20 +81,20 @@ export function ChatPanel({ api }: { api: SimulatorApi }) {
           aria-label="Conversación con Polaria"
           className="flex flex-col gap-2.5"
         >
-          {state.messages.map((message) => (
+          {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
         </div>
 
-        {state.typing && <TypingIndicator />}
+        {typing && <TypingIndicator />}
       </div>
 
       <Composer
         draft={draft}
-        onDraftChange={setDraft}
-        onSend={send}
-        onInteract={abortAutoplay}
-        suggestions={state.suggestions}
+        onDraftChange={onDraftChange}
+        onSend={onSend}
+        onInteract={onInteract}
+        suggestions={suggestions}
         isBusy={isBusy}
       />
     </div>

@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import {
-  createInitialState,
-  simReducer,
-  type SimAction,
-} from "@/features/simulator/engine/reducer";
+import { createInitialState, simReducer } from "@/features/simulator/engine/reducer";
 import { resolveTurn } from "@/features/simulator/engine/graph";
 import { autoplayScript, typingSpeedMs } from "@/features/simulator/data/autoplay";
 import { browsingSuggestions } from "@/features/simulator/data/suggestions";
@@ -26,7 +22,10 @@ export function useSimulator() {
 
   const prefersReduced = useReducedMotion() ?? false;
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // Callback ref en vez de RefObject: así el objeto que devuelve el hook no
+  // contiene refs y la UI puede leer `api.state` durante el render sin que el
+  // analizador de React lo tome por acceso a una ref.
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const stateRef = useRef(state);
   const runRef = useRef(0);
   const aliveRef = useRef(true);
@@ -185,8 +184,7 @@ export function useSimulator() {
 
   // Arranca sola al entrar en pantalla. Antes de eso el bloque está quieto.
   useEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
+    if (!containerEl) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -198,9 +196,9 @@ export function useSimulator() {
       { threshold: 0.35 },
     );
 
-    observer.observe(element);
+    observer.observe(containerEl);
     return () => observer.disconnect();
-  }, [runAutoplay]);
+  }, [containerEl, runAutoplay]);
 
   const reset = useCallback(() => {
     runRef.current += 1;
@@ -222,12 +220,10 @@ export function useSimulator() {
     send,
     reset,
     isBusy,
-    containerRef,
+    /** Callback ref: se pasa tal cual al `ref` del contenedor del simulador. */
+    attachContainer: setContainerEl,
     abortAutoplay,
     markAgendaSeen,
     prefersReduced,
   };
 }
-
-export type SimulatorApi = ReturnType<typeof useSimulator>;
-export type { SimAction };

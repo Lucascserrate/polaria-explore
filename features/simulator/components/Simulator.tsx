@@ -17,28 +17,42 @@ import { cn } from "@/lib/utils";
  * agenda" cuenta la historia igual de bien que la vista partida.
  */
 export function Simulator() {
-  const api = useSimulator();
+  const {
+    state,
+    draft,
+    setDraft,
+    send,
+    reset,
+    isBusy,
+    attachContainer,
+    abortAutoplay,
+    markAgendaSeen,
+    prefersReduced,
+  } = useSimulator();
+
   const [panel, setPanel] = useState<PanelKey>("chat");
 
   function switchPanel(next: PanelKey) {
     setPanel(next);
-    if (next === "agenda") api.markAgendaSeen();
+    if (next === "agenda") markAgendaSeen();
   }
 
+  const panelHeight = "h-[30rem] min-h-0 sm:h-[33rem]";
+
   return (
-    <div ref={api.containerRef} className="flex flex-col gap-3">
+    <div ref={attachContainer} className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <PanelToggle
           value={panel}
           onChange={switchPanel}
-          badgeCount={api.state.unseenAgendaUpdates}
+          badgeCount={state.unseenAgendaUpdates}
         />
 
-        {api.state.messages.length > 0 && (
+        {state.messages.length > 0 && (
           <button
             type="button"
             onClick={() => {
-              api.reset();
+              reset();
               setPanel("chat");
             }}
             className="ml-auto shrink-0 text-xs font-medium text-white/45 underline-offset-4 transition hover:text-white/80 hover:underline"
@@ -57,27 +71,42 @@ export function Simulator() {
         <div
           id="sim-panel-chat"
           className={cn(
-            "h-[30rem] min-h-0 sm:h-[33rem]",
+            panelHeight,
             panel === "chat" ? "flex flex-col" : "hidden",
             "lg:flex lg:flex-col lg:border-r lg:border-paper-300",
           )}
         >
-          <ChatPanel api={api} />
+          <ChatPanel
+            messages={state.messages}
+            typing={state.typing}
+            clock={state.clock}
+            suggestions={state.suggestions}
+            draft={draft}
+            isBusy={isBusy}
+            prefersReduced={prefersReduced}
+            onDraftChange={setDraft}
+            onSend={send}
+            onInteract={abortAutoplay}
+          />
         </div>
 
         <div
           id="sim-panel-agenda"
           className={cn(
-            "h-[30rem] min-h-0 sm:h-[33rem]",
+            panelHeight,
             panel === "agenda" ? "flex flex-col" : "hidden",
             "lg:flex lg:flex-col",
           )}
         >
-          <AgendaPanel api={api} />
+          <AgendaPanel
+            agenda={state.agenda}
+            alerts={state.alerts}
+            messageCount={state.messages.length}
+          />
         </div>
       </div>
 
-      <AnimatePresence>{api.state.outroVisible && <SimulatorOutro />}</AnimatePresence>
+      <AnimatePresence>{state.outroVisible && <SimulatorOutro />}</AnimatePresence>
     </div>
   );
 }
