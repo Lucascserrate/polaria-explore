@@ -23,7 +23,7 @@ export function Navbar() {
 					aria-label="Principal"
 					className="flex items-center justify-between gap-4 rounded-full bg-ink-900/70 py-2 pl-5 pr-2 ring-1 ring-inset ring-white/10 backdrop-blur-md"
 				>
-					<a href="#top" className="shrink-0 rounded-full">
+					<a href="#top" className="flex shrink-0 rounded-full">
 						<Logo tone="light" className="text-[0.9375rem]" />
 						<span className="sr-only-live">Polaria, ir al inicio</span>
 					</a>
