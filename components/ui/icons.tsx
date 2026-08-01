@@ -116,3 +116,17 @@ export const ChevronDown = (p: IconProps) => (
     <path d="m6 9.5 6 6 6-6" />
   </Icon>
 );
+
+export const ChevronRight = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m9.5 6 6 6-6 6" />
+  </Icon>
+);
+
+export const Scissors = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="6" cy="6" r="2.5" />
+    <circle cx="6" cy="18" r="2.5" />
+    <path d="M8 7.5 20 18M20 6 8 16.5" />
+  </Icon>
+);

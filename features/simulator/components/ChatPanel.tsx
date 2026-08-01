@@ -19,6 +19,7 @@ export function ChatPanel({
   prefersReduced,
   onDraftChange,
   onSend,
+  onSelectAction,
   onInteract,
 }: {
   messages: ChatMessage[];
@@ -30,6 +31,7 @@ export function ChatPanel({
   prefersReduced: boolean;
   onDraftChange: (value: string) => void;
   onSend: (text: string) => void;
+  onSelectAction: (id: string, label: string) => void;
   onInteract: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +84,11 @@ export function ChatPanel({
           className="flex flex-col gap-2.5"
         >
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              onSelectAction={onSelectAction}
+            />
           ))}
         </div>
 

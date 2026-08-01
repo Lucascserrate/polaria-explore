@@ -12,9 +12,10 @@ import { cn } from "@/lib/utils";
 /**
  * Shell de doble panel.
  *
- * Izquierda: el chat del cliente. Derecha: lo que ve el dueño.
- * En móvil se convierte en un conmutador, y el badge que salta sobre "Tu
- * agenda" cuenta la historia igual de bien que la vista partida.
+ * Izquierda: el chat del cliente, con la reserva guiada. Derecha: la agenda
+ * del profesional que se esté eligiendo, que se mueve sola a medida que
+ * avanza el flujo. En móvil se convierte en un conmutador, y el badge que
+ * salta sobre "Tu agenda" cuenta la historia igual de bien.
  */
 export function Simulator() {
   const {
@@ -22,6 +23,8 @@ export function Simulator() {
     draft,
     setDraft,
     send,
+    selectAction,
+    setActiveBarber,
     reset,
     isBusy,
     attachContainer,
@@ -37,7 +40,7 @@ export function Simulator() {
     if (next === "agenda") markAgendaSeen();
   }
 
-  const panelHeight = "h-[30rem] min-h-0 sm:h-[33rem]";
+  const panelHeight = "h-[32rem] min-h-0 sm:h-[35rem]";
 
   return (
     <div ref={attachContainer} className="flex flex-col gap-3">
@@ -86,6 +89,7 @@ export function Simulator() {
             prefersReduced={prefersReduced}
             onDraftChange={setDraft}
             onSend={send}
+            onSelectAction={selectAction}
             onInteract={abortAutoplay}
           />
         </div>
@@ -99,9 +103,11 @@ export function Simulator() {
           )}
         >
           <AgendaPanel
-            agenda={state.agenda}
+            agendas={state.agendas}
+            activeBarberId={state.activeBarberId}
             alerts={state.alerts}
             messageCount={state.messages.length}
+            onSelectBarber={setActiveBarber}
           />
         </div>
       </div>

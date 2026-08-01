@@ -31,6 +31,23 @@ npm run build
   calculadora y los formularios. El FAQ usa `<details>` nativo a propósito.
 - **Sin `Date.now()` ni `Math.random()` en el simulador.** El reloj es ficticio
   y los ids salen de un contador: si no, se rompe la hidratación.
+- **Los ids de acción se parsean por el primer `:`** (`parseActionId`). Un
+  `split(":")` rompe `slot:14:30`, porque los horarios llevan dos puntos.
+
+## El simulador
+
+Dos caminos que conviven sobre el mismo motor:
+
+1. **Reserva guiada** (el diferencial): menú → servicio → profesional →
+   horario, sobre mensajes interactivos de WhatsApp. Cada profesional tiene su
+   propia agenda en `data/salon.ts`, y los horarios ofrecidos salen de los
+   huecos reales de quien se elija. Ese contraste es la demostración de que
+   Polaria gestiona agendas.
+2. **Conversación libre** para todo lo demás, con derivación a humano como
+   fallback. El fallback nunca es un error: es una función del producto, y es
+   lo que hace que ningún input pueda romper la demo.
+
+`npm run check:engine` recorre ambos caminos sin navegador.
 
 ## El switch de CTA
 

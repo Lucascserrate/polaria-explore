@@ -1,200 +1,382 @@
-import type { OutgoingMessage, SimContext, Turn } from "@/features/simulator/types";
+import type {
+  AgendaSlot,
+  BarberId,
+  ChatAction,
+  OutgoingMessage,
+  SimContext,
+  Turn,
+} from "@/features/simulator/types";
 import { matchIntent, matchSlotChoice } from "@/features/simulator/engine/matcher";
 import type { IntentId } from "@/features/simulator/engine/intents";
 import {
-  alternativeSlots,
-  defaultOfferedSlots,
+  ANY_BARBER,
+  MAX_OFFERED_SLOTS,
+  barberById,
+  barbers,
+  firstBarberFreeAt,
   formatPrice,
+  freeSlotsAnyBarber,
+  freeSlotsOf,
   salon,
+  serviceByKey,
 } from "@/features/simulator/data/salon";
 import {
   afterBookingSuggestions,
   browsingSuggestions,
   openingSuggestions,
-  slotSuggestions,
 } from "@/features/simulator/data/suggestions";
 
 /**
  * Grafo de conversación.
  *
- * Las transiciones se calculan a partir del contexto en vez de estar cableadas,
- * que es lo que permite que "quiero cambiar mi cita" se comporte distinto según
- * haya o no una cita previa. Sin eso, la demo se nota guionada al segundo turno.
+ * Tiene dos caminos que conviven:
+ *
+ * 1. **Reserva guiada** — el flujo real del producto sobre mensajes
+ *    interactivos de WhatsApp: menú → servicio → profesional → horario. Es el
+ *    diferencial, así que es el camino por defecto.
+ * 2. **Conversación libre** — lenguaje natural para todo lo demás, con
+ *    derivación a humano cuando algo se sale del libreto.
+ *
+ * Las transiciones se calculan a partir del contexto y de la agenda real de
+ * cada profesional, no están cableadas. Por eso los horarios que se ofrecen
+ * cambian según a quién se elija.
  */
 
-/** El tiempo de "escribiendo…" crece con el largo del mensaje, con techo. */
+type Agendas = Record<BarberId, AgendaSlot[]>;
+
+/** Mensaje conversacional: el tiempo de tipeo crece con el largo del texto. */
 function msg(text: string, extra?: Partial<OutgoingMessage>): OutgoingMessage {
+  return { text, typingMs: Math.min(1500, 420 + text.length * 11), ...extra };
+}
+
+/** Paso de flujo guiado: se siente instantáneo, igual que un Flow real. */
+function flowMsg(text: string, extra?: Partial<OutgoingMessage>): OutgoingMessage {
+  return { text, typingMs: Math.min(780, 340 + text.length * 6), ...extra };
+}
+
+// ---------------------------------------------------------------------------
+// Pasos del flujo guiado
+// ---------------------------------------------------------------------------
+
+const menuActions: ChatAction[] = [
+  { id: "menu:reservar", label: "Reservar una cita" },
+  { id: "menu:precios", label: "Ver precios" },
+  { id: "menu:horarios", label: "Horarios" },
+];
+
+function menuTurn(greeted: boolean): Turn {
   return {
-    text,
-    typingMs: Math.min(1500, 420 + text.length * 11),
-    ...extra,
+    messages: [
+      flowMsg(`¡Hola! Soy Polaria, contesto por ${salon.name} 👋`),
+      flowMsg(
+        greeted
+          ? "¿En qué más te ayudo?"
+          : `Hoy es ${salon.today} y está cerrado, pero te puedo dejar la cita agendada ahora. ¿Qué querés hacer?`,
+        { interactive: { kind: "buttons", actions: menuActions } },
+      ),
+    ],
+    suggests: [],
+    context: { greeted: true, flowStep: "menu" },
   };
 }
 
-const serviceLabels = salon.services.map((s) => `${s.label} — ${formatPrice(s.price)}`);
+function serviceTurn(): Turn {
+  const actions: ChatAction[] = salon.services.map((service) => ({
+    id: `service:${service.key}`,
+    label: service.label,
+    description: `${formatPrice(service.price)} · ${service.minutes} min`,
+  }));
 
-function bookingTurn(slot: string, ctx: SimContext): Turn {
-  const service = ctx.pendingService ?? "Corte";
-  const price =
-    salon.services.find((s) => s.label === service)?.price ?? salon.services[0].price;
+  return {
+    messages: [
+      flowMsg("Perfecto. ¿Qué servicio necesitás?", {
+        interactive: { kind: "list", title: "Servicios", actions },
+      }),
+    ],
+    suggests: [],
+    context: { flowStep: "service", movingAppointment: false },
+  };
+}
+
+/**
+ * Elección de profesional. Cada fila muestra cuántos huecos le quedan: el
+ * visitante ve que la disponibilidad difiere antes incluso de elegir.
+ */
+function barberTurn(agendas: Agendas, serviceKey: string): Turn {
+  const actions: ChatAction[] = barbers.map((barber) => {
+    const count = freeSlotsOf(agendas, barber.id).length;
+    return {
+      id: `barber:${barber.id}`,
+      label: barber.name,
+      description: `${barber.role} · ${count} ${count === 1 ? "horario libre" : "horarios libres"}`,
+    };
+  });
+
+  actions.push({
+    id: `barber:${ANY_BARBER}`,
+    label: "Sin preferencia",
+    description: `El primero que tenga lugar · ${freeSlotsAnyBarber(agendas).length} horarios`,
+  });
+
+  const service = serviceByKey(serviceKey);
+
+  return {
+    messages: [
+      flowMsg(`${service.label}, anotado. ¿Tenés algún barbero de preferencia?`, {
+        interactive: { kind: "list", title: "Profesionales", actions },
+      }),
+    ],
+    suggests: [],
+    context: { flowStep: "barber", selectedServiceKey: serviceKey },
+  };
+}
+
+/** Horarios del profesional elegido. Es el momento en que la agenda importa. */
+function slotTurn(agendas: Agendas, selection: BarberId | "any"): Turn {
+  const isAny = selection === ANY_BARBER;
+  const available = isAny
+    ? freeSlotsAnyBarber(agendas)
+    : freeSlotsOf(agendas, selection);
+  const offered = available.slice(0, MAX_OFFERED_SLOTS);
+
+  if (offered.length === 0) {
+    return {
+      messages: [
+        flowMsg(
+          isAny
+            ? `No queda ningún horario libre ${salon.targetDay}.`
+            : `${barberById(selection).name} no tiene horarios libres ${salon.targetDay}.`,
+        ),
+        flowMsg("¿Querés que busque con otro profesional?", {
+          interactive: {
+            kind: "buttons",
+            actions: [
+              { id: "menu:reservar", label: "Ver otros profesionales" },
+              { id: `barber:${ANY_BARBER}`, label: "Sin preferencia" },
+            ],
+          },
+        }),
+      ],
+      suggests: [],
+      context: { flowStep: "barber" },
+    };
+  }
+
+  const who = isAny ? "en total" : `con ${barberById(selection).name}`;
+
+  return {
+    messages: [
+      flowMsg(`Estos son los horarios libres ${who} para ${salon.targetDay}:`, {
+        interactive: {
+          kind: "buttons",
+          actions: offered.map((time) => ({ id: `slot:${time}`, label: time })),
+        },
+      }),
+    ],
+    // El panel derecho se mueve a la agenda de esa persona: el visitante ve
+    // que los horarios ofrecidos son exactamente los huecos de ese profesional.
+    effects: isAny ? [] : [{ type: "barber.focus", barberId: selection }],
+    suggests: [],
+    context: {
+      flowStep: "slot",
+      selectedBarberId: selection,
+      offeredSlots: offered,
+    },
+  };
+}
+
+function bookingTurn(agendas: Agendas, slot: string, ctx: SimContext): Turn {
+  const selection = ctx.selectedBarberId ?? ANY_BARBER;
+  const barberId =
+    selection === ANY_BARBER ? firstBarberFreeAt(agendas, slot) : selection;
+  const barber = barberById(barberId);
+  const service = serviceByKey(ctx.selectedServiceKey);
+
+  const card = {
+    service: service.label,
+    day: salon.targetDay,
+    time: slot,
+    price: formatPrice(service.price),
+    staff: barber.name,
+  };
 
   if (ctx.movingAppointment && ctx.bookedSlot) {
     return {
       messages: [
-        msg(`Listo, la moví a las ${slot}.`),
-        msg("Martín va a ver el cambio apenas abra. No tenés que avisarle nada.", {
-          card: {
-            service,
-            day: salon.targetDay,
-            time: slot,
-            price: formatPrice(price),
-            staff: salon.owner,
-          },
-        }),
+        flowMsg(`Listo, la moví a las ${slot}.`, { card }),
+        msg("Martín va a ver el cambio apenas abra. No tenés que avisarle nada."),
       ],
-      effects: [{ type: "appointment.moved", from: ctx.bookedSlot, to: slot }],
+      effects: [
+        { type: "appointment.moved", from: ctx.bookedSlot, to: slot, barberId },
+        { type: "barber.focus", barberId },
+      ],
       suggests: afterBookingSuggestions,
       context: {
         bookedSlot: slot,
         offeredSlots: [],
         movingAppointment: false,
+        flowStep: null,
       },
     };
   }
 
   return {
     messages: [
-      msg("Listo, te agendé 👇", {
-        card: {
-          service,
-          day: salon.targetDay,
-          time: slot,
-          price: formatPrice(price),
-          staff: salon.owner,
-        },
-      }),
-      msg(
-        `Te va a llegar un recordatorio una hora antes. Si te surge algo, escribime y lo movemos.`,
+      flowMsg(
+        selection === ANY_BARBER
+          ? `Listo, te agendé con ${barber.name}, que tiene ese horario libre 👇`
+          : "Listo, te agendé 👇",
+        { card },
       ),
+      msg("Te mando un recordatorio una hora antes. Si te surge algo, escribime."),
     ],
-    effects: [{ type: "appointment.created", slot, service }],
+    effects: [
+      { type: "appointment.created", slot, service: service.label, barberId },
+      { type: "barber.focus", barberId },
+    ],
     suggests: afterBookingSuggestions,
     context: {
       hasAppointment: true,
       bookedSlot: slot,
-      bookedService: service,
+      bookedService: service.label,
+      bookedBarberId: barberId,
       offeredSlots: [],
-      pendingService: null,
+      flowStep: null,
     },
   };
 }
 
-function offerSlotsTurn(): Turn {
-  return {
-    messages: [
-      msg(`Para ${salon.targetDay} me quedan dos horarios:`),
-      msg(
-        `${defaultOfferedSlots.join("  ·  ")}\n\n¿Cuál te queda mejor?`,
-      ),
-    ],
-    suggests: slotSuggestions(defaultOfferedSlots),
-    context: {
-      offeredSlots: defaultOfferedSlots,
-      pendingService: "Corte",
-      movingAppointment: false,
-    },
-  };
-}
-
-/** El fallback. Nunca es un error: es la derivación a humano, que es una función real. */
+/** El fallback. Nunca es un error: es la derivación a humano. */
 function handoffTurn(reason: string, opener?: string): Turn {
   return {
     messages: [
       msg(opener ?? "Uy, eso mejor te lo confirma Martín directamente."),
-      msg(`Le paso tu mensaje y te responde apenas pueda 👍`),
+      msg("Le paso tu mensaje y te responde apenas pueda 👍"),
     ],
     effects: [{ type: "handoff", reason }],
     suggests: browsingSuggestions,
-    context: { offeredSlots: [] },
+    context: { flowStep: null, offeredSlots: [] },
   };
 }
 
-const resolvers: Record<IntentId, (ctx: SimContext, input: string) => Turn> = {
-  saludo: (ctx) => ({
-    messages: [
-      msg(`¡Hola! Soy Polaria, contesto por ${salon.name} 👋`),
-      msg(
-        ctx.greeted
-          ? "¿En qué más te ayudo?"
-          : `Hoy es ${salon.today} y la barbería está cerrada, pero te puedo dejar la cita agendada ahora mismo. ¿Qué necesitás?`,
-      ),
-    ],
-    suggests: openingSuggestions,
-    context: { greeted: true },
-  }),
+/** Botón para volver al flujo desde una respuesta conversacional. */
+const backToBooking: ChatAction[] = [
+  { id: "menu:reservar", label: "Reservar una cita" },
+];
 
-  disponibilidad: () => offerSlotsTurn(),
+// ---------------------------------------------------------------------------
+// Conversación libre
+// ---------------------------------------------------------------------------
+
+const serviceLines = salon.services.map(
+  (s) => `${s.label} — ${formatPrice(s.price)}`,
+);
+
+const resolvers: Record<
+  IntentId,
+  (ctx: SimContext, input: string, agendas: Agendas) => Turn
+> = {
+  saludo: (ctx) => menuTurn(ctx.greeted),
+
+  disponibilidad: () => serviceTurn(),
 
   precio: () => ({
     messages: [
       msg("Estos son los precios:"),
-      msg(`${serviceLabels.join("\n")}\n\n¿Te agendo alguno?`),
+      flowMsg(serviceLines.join("\n"), {
+        interactive: { kind: "buttons", actions: backToBooking },
+      }),
     ],
-    suggests: ["¿Tienen cita para mañana?", "Corte + barba", "¿Atienden niños?"],
+    suggests: [],
   }),
 
   servicios: () => ({
     messages: [
       msg("Hacemos corte, barba, corte + barba y corte de niño."),
-      msg(`${serviceLabels.join("\n")}`),
+      flowMsg(serviceLines.join("\n"), {
+        interactive: { kind: "buttons", actions: backToBooking },
+      }),
     ],
-    suggests: ["¿Tienen cita para mañana?", "¿Cuánto cuesta un corte?"],
+    suggests: [],
   }),
 
   horario: () => ({
     messages: [
       msg(`${salon.hours}. ${salon.closedNote}`),
       // La frase que explica el producto entero.
-      msg("Yo contesto a cualquier hora, así que podés dejar tu cita lista ahora."),
+      flowMsg("Yo contesto a cualquier hora, así que podés dejar tu cita lista ahora.", {
+        interactive: { kind: "buttons", actions: backToBooking },
+      }),
     ],
-    suggests: openingSuggestions,
+    suggests: [],
   }),
 
   ubicacion: () => ({
     messages: [
       msg("Estamos en Av. Las Américas 480, a media cuadra del segundo anillo."),
-      msg("Cuando confirmes la cita te mando la ubicación exacta por acá."),
+      flowMsg("Cuando confirmes la cita te mando la ubicación exacta por acá.", {
+        interactive: { kind: "buttons", actions: backToBooking },
+      }),
     ],
-    suggests: browsingSuggestions,
+    suggests: [],
   }),
 
-  cambiar_cita: (ctx) => {
-    if (!ctx.hasAppointment) {
+  cambiar_cita: (ctx, _input, agendas) => {
+    if (!ctx.hasAppointment || !ctx.bookedBarberId) {
       return {
         messages: [
           msg("No encuentro ninguna cita a tu nombre."),
-          msg("¿Querés que te agende una?"),
+          flowMsg("¿Querés que te agende una?", {
+            interactive: { kind: "buttons", actions: backToBooking },
+          }),
         ],
-        suggests: openingSuggestions,
+        suggests: [],
       };
     }
 
-    const options = alternativeSlots.filter((s) => s !== ctx.bookedSlot);
+    const options = freeSlotsOf(agendas, ctx.bookedBarberId).slice(
+      0,
+      MAX_OFFERED_SLOTS,
+    );
+    const barber = barberById(ctx.bookedBarberId);
+
+    if (options.length === 0) {
+      return {
+        messages: [
+          msg(`A ${barber.name} no le queda otro hueco ${salon.targetDay}.`),
+          flowMsg("¿Probamos con otro profesional?", {
+            interactive: { kind: "buttons", actions: backToBooking },
+          }),
+        ],
+        suggests: [],
+      };
+    }
 
     return {
       messages: [
         msg(
-          `Tenés ${ctx.bookedService ?? "Corte"} ${salon.targetDay} a las ${ctx.bookedSlot}.`,
+          `Tenés ${ctx.bookedService ?? "Corte"} con ${barber.name} ${salon.targetDay} a las ${ctx.bookedSlot}.`,
         ),
-        msg(`Me quedan libres ${options.join(" y ")}. ¿A cuál la muevo?`),
+        flowMsg("¿A qué horario la muevo?", {
+          interactive: {
+            kind: "buttons",
+            actions: options.map((time) => ({ id: `slot:${time}`, label: time })),
+          },
+        }),
       ],
-      suggests: slotSuggestions(options),
-      context: { offeredSlots: options, movingAppointment: true },
+      effects: [{ type: "barber.focus", barberId: ctx.bookedBarberId }],
+      suggests: [],
+      context: {
+        flowStep: "slot",
+        offeredSlots: options,
+        movingAppointment: true,
+        selectedBarberId: ctx.bookedBarberId,
+      },
     };
   },
 
   cancelar: (ctx) => {
-    if (!ctx.hasAppointment || !ctx.bookedSlot) {
+    if (!ctx.hasAppointment || !ctx.bookedSlot || !ctx.bookedBarberId) {
       return {
         messages: [msg("No tengo ninguna cita a tu nombre para cancelar.")],
         suggests: openingSuggestions,
@@ -206,13 +388,21 @@ const resolvers: Record<IntentId, (ctx: SimContext, input: string) => Turn> = {
         msg(`Listo, cancelé tu cita de ${salon.targetDay} a las ${ctx.bookedSlot}.`),
         msg("Ya le avisé a Martín y el horario quedó libre para otra persona."),
       ],
-      effects: [{ type: "appointment.cancelled", slot: ctx.bookedSlot }],
+      effects: [
+        {
+          type: "appointment.cancelled",
+          slot: ctx.bookedSlot,
+          barberId: ctx.bookedBarberId,
+        },
+      ],
       suggests: openingSuggestions,
       context: {
         hasAppointment: false,
         bookedSlot: null,
         bookedService: null,
+        bookedBarberId: null,
         offeredSlots: [],
+        flowStep: null,
       },
     };
   },
@@ -230,17 +420,21 @@ const resolvers: Record<IntentId, (ctx: SimContext, input: string) => Turn> = {
   ninos: () => ({
     messages: [
       msg(`Sí, atendemos niños. Corte niño — ${formatPrice(40)}.`),
-      msg("¿Te agendo uno?"),
+      flowMsg("¿Te agendo uno?", {
+        interactive: { kind: "buttons", actions: backToBooking },
+      }),
     ],
-    suggests: ["¿Tienen cita para mañana?", "¿Cuánto cuesta un corte?"],
+    suggests: [],
   }),
 
   pago: () => ({
-    messages: [msg("Se puede pagar en efectivo, por QR o transferencia. Tarjeta todavía no.")],
+    messages: [
+      msg("Se puede pagar en efectivo, por QR o transferencia. Tarjeta todavía no."),
+    ],
     suggests: browsingSuggestions,
   }),
 
-  // Casos que Polaria sí reconoce pero deliberadamente no responde sola.
+  // Casos que Polaria reconoce pero deliberadamente no responde sola.
   domicilio: (_ctx, input) =>
     handoffTurn(input, "El servicio a domicilio lo coordina Martín en persona."),
 
@@ -248,28 +442,115 @@ const resolvers: Record<IntentId, (ctx: SimContext, input: string) => Turn> = {
     handoffTurn(input, "Dale, le paso tu mensaje a Martín ahora mismo."),
 };
 
+// ---------------------------------------------------------------------------
+// Entrada del motor
+// ---------------------------------------------------------------------------
+
 /**
- * Punto de entrada del motor: dado lo que escribió la persona y el contexto
- * actual, devuelve el turno completo de Polaria.
+ * Separa `"slot:14:30"` en `["slot", "14:30"]`.
+ *
+ * Hay que cortar por el PRIMER separador: los horarios llevan dos puntos, así
+ * que un `split(":")` devolvería "14" y la reserva se agendaría en un hueco
+ * inexistente.
  */
-export function resolveTurn(input: string, ctx: SimContext): Turn {
-  // Si Polaria ofreció horarios, elegir uno tiene prioridad sobre cualquier
-  // intención: "las 5" no es una consulta, es la respuesta a la pregunta previa.
-  if (ctx.offeredSlots.length > 0) {
-    const slot = matchSlotChoice(input, ctx.offeredSlots);
-    if (slot) return bookingTurn(slot, ctx);
+function parseActionId(actionId: string): [string, string] {
+  const index = actionId.indexOf(":");
+  return index === -1
+    ? [actionId, ""]
+    : [actionId.slice(0, index), actionId.slice(index + 1)];
+}
+
+function handleAction(actionId: string, ctx: SimContext, agendas: Agendas): Turn | null {
+  const [scope, value] = parseActionId(actionId);
+
+  switch (scope) {
+    case "menu":
+      if (value === "reservar") return serviceTurn();
+      if (value === "precios") return resolvers.precio(ctx, "", agendas);
+      if (value === "horarios") return resolvers.horario(ctx, "", agendas);
+      return null;
+
+    case "service":
+      return barberTurn(agendas, value);
+
+    case "barber":
+      return slotTurn(agendas, value);
+
+    case "slot":
+      return bookingTurn(agendas, value, ctx);
+
+    default:
+      return null;
+  }
+}
+
+/** Busca una opción del paso actual dentro de texto escrito a mano. */
+function matchActionByText(input: string, actions: ChatAction[]): string | null {
+  const normalized = input.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  for (const action of actions) {
+    const label = action.label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+    if (normalized.includes(label)) return action.id;
+  }
+  return null;
+}
+
+/**
+ * Punto de entrada del motor.
+ *
+ * `actionId` llega cuando la persona tocó una opción; en ese caso la
+ * transición es determinista. Si escribió a mano, se intenta primero
+ * interpretarlo dentro del paso actual del flujo y después como conversación.
+ */
+export function resolveTurn(
+  input: string,
+  ctx: SimContext,
+  agendas: Agendas,
+  actionId?: string,
+): Turn {
+  if (actionId) {
+    const turn = handleAction(actionId, ctx, agendas);
+    if (turn) return turn;
   }
 
-  const match = matchIntent(input);
+  // Dentro del flujo, la respuesta al paso actual tiene prioridad sobre
+  // cualquier intención: "las 5" no es una consulta, es una elección.
+  if (ctx.flowStep === "slot" && ctx.offeredSlots.length > 0) {
+    const slot = matchSlotChoice(input, ctx.offeredSlots);
+    if (slot) return bookingTurn(agendas, slot, ctx);
+  }
+
+  if (ctx.flowStep === "service") {
+    const match = matchActionByText(
+      input,
+      salon.services.map((s) => ({ id: `service:${s.key}`, label: s.label })),
+    );
+    if (match) return barberTurn(agendas, parseActionId(match)[1]);
+  }
+
+  if (ctx.flowStep === "barber") {
+    const options: ChatAction[] = [
+      ...barbers.map((b) => ({ id: `barber:${b.id}`, label: b.name })),
+      { id: `barber:${ANY_BARBER}`, label: "sin preferencia" },
+      { id: `barber:${ANY_BARBER}`, label: "cualquiera" },
+      { id: `barber:${ANY_BARBER}`, label: "me da igual" },
+    ];
+    const match = matchActionByText(input, options);
+    if (match) return slotTurn(agendas, parseActionId(match)[1]);
+  }
+
+  const intent = matchIntent(input);
 
   // Un "dale" suelto mientras hay horarios sobre la mesa toma el primero.
-  if (match?.id === "confirmar" && ctx.offeredSlots.length > 0) {
-    return bookingTurn(ctx.offeredSlots[0], ctx);
+  if (intent?.id === "confirmar" && ctx.flowStep === "slot" && ctx.offeredSlots[0]) {
+    return bookingTurn(agendas, ctx.offeredSlots[0], ctx);
   }
 
-  if (!match) return handoffTurn(input);
+  if (!intent) return handoffTurn(input);
 
-  return resolvers[match.id](ctx, input);
+  return resolvers[intent.id](ctx, input, agendas);
 }
 
 export const initialContext: SimContext = {
@@ -277,7 +558,10 @@ export const initialContext: SimContext = {
   hasAppointment: false,
   bookedSlot: null,
   bookedService: null,
+  bookedBarberId: null,
   offeredSlots: [],
-  pendingService: null,
+  flowStep: null,
+  selectedServiceKey: null,
+  selectedBarberId: null,
   movingAppointment: false,
 };

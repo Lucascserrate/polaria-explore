@@ -16,8 +16,8 @@ export const hero = {
 
   simulator: {
     eyebrow: "Probala",
-    title: "Escribile como te escriben a vos",
+    title: "Mirá cómo se reserva una cita",
     description:
-      "Es una simulación, no un video. Escribí lo que quieras: hasta lo que ninguna respuesta automática sabría contestar.",
+      "Servicio, profesional y horario en cuatro toques. Fijate cómo cambian los horarios según el barbero, y cómo la agenda de la derecha se llena sola. También podés escribirle lo que se te ocurra.",
   },
 } as const;

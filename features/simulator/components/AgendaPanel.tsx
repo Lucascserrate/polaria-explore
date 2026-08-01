@@ -2,44 +2,88 @@
 
 import { AnimatePresence } from "motion/react";
 import { OwnerNotification } from "@/features/simulator/components/OwnerNotification";
-import type { AgendaSlot, OwnerAlert } from "@/features/simulator/types";
-import { salon } from "@/features/simulator/data/salon";
+import type { AgendaSlot, BarberId, OwnerAlert } from "@/features/simulator/types";
+import { barbers, freeSlotsOf, salon } from "@/features/simulator/data/salon";
 import { cn } from "@/lib/utils";
 
 /**
  * El panel del dueño. Es la mitad que de verdad vende.
  *
- * El momento importante no es que Polaria conteste bien: es que la cita
- * aparezca acá sola. Sin este panel estaríamos mostrando un chatbot; con él
- * mostramos tiempo libre.
+ * Hay una agenda por profesional y el panel sigue a la que se esté eligiendo
+ * en el chat. Ver que los horarios cambian al cambiar de barbero es lo que
+ * demuestra que Polaria gestiona agendas; sin eso, sería un chatbot con buena
+ * redacción.
  */
 export function AgendaPanel({
-  agenda,
+  agendas,
+  activeBarberId,
   alerts,
   messageCount,
+  onSelectBarber,
 }: {
-  agenda: AgendaSlot[];
+  agendas: Record<BarberId, AgendaSlot[]>;
+  activeBarberId: BarberId;
   alerts: OwnerAlert[];
   messageCount: number;
+  onSelectBarber: (barberId: BarberId) => void;
 }) {
   const latestAlert = alerts[0];
+  const slots = agendas[activeBarberId] ?? [];
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper-100">
-      <header className="flex items-baseline justify-between border-b border-paper-300 px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-ink-900">Tu agenda</p>
-          <p className="text-xs text-ink-500">Lo que ve {salon.owner}</p>
+      <header className="border-b border-paper-300 px-4 py-3">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <p className="text-sm font-semibold text-ink-900">Tu agenda</p>
+            <p className="text-xs text-ink-500">Disponibilidad por profesional</p>
+          </div>
+          <span className="font-mono text-xs uppercase tabular-nums text-ink-500">
+            {salon.shortDay}
+          </span>
         </div>
-        <span className="font-mono text-xs uppercase tabular-nums text-ink-500">
-          {salon.shortDay}
-        </span>
+
+        <div
+          role="group"
+          aria-label="Profesional"
+          className="mt-2.5 flex gap-1 rounded-lg bg-paper-200 p-1"
+        >
+          {barbers.map((barber) => {
+            const active = barber.id === activeBarberId;
+            const free = freeSlotsOf(agendas, barber.id).length;
+
+            return (
+              <button
+                key={barber.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onSelectBarber(barber.id)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition",
+                  active
+                    ? "bg-white text-ink-900 shadow-sm"
+                    : "text-ink-600 hover:text-ink-900",
+                )}
+              >
+                {barber.name}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 font-mono text-[0.625rem] tabular-nums",
+                    active ? "bg-brand-50 text-brand-700" : "bg-paper-300 text-ink-600",
+                  )}
+                >
+                  {free}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3.5 py-4">
         <ul className="flex flex-col gap-1.5">
-          {agenda.map((slot) => (
-            <SlotRow key={slot.time} slot={slot} />
+          {slots.map((slot) => (
+            <SlotRow key={`${activeBarberId}-${slot.time}`} slot={slot} />
           ))}
         </ul>
 

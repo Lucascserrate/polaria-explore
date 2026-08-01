@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import type { ChatMessage } from "@/features/simulator/types";
+import { MessageActions } from "@/features/simulator/components/MessageActions";
 import { Check } from "@/components/ui/icons";
 import { easeOutSoft } from "@/config/motion";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,13 @@ import { cn } from "@/lib/utils";
  * Evoca un chat sin clonar una interfaz ajena, y deja la voz del producto como
  * el elemento visualmente dominante.
  */
-export function MessageBubble({ message }: { message: ChatMessage }) {
+export function MessageBubble({
+  message,
+  onSelectAction,
+}: {
+  message: ChatMessage;
+  onSelectAction: (id: string, label: string) => void;
+}) {
   const reduced = useReducedMotion();
   const isPolaria = message.sender === "polaria";
 
@@ -27,24 +34,39 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     >
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[0.9375rem] leading-relaxed shadow-sm",
-          isPolaria
-            ? "rounded-bl-md bg-brand-600 text-white"
-            : "rounded-br-md bg-paper-200 text-ink-900",
+          "flex max-w-[88%] flex-col gap-1.5",
+          isPolaria ? "items-start" : "items-end",
         )}
       >
-        <p className="whitespace-pre-line text-pretty">{message.text}</p>
-
-        {message.card && <ConfirmationCardView card={message.card} />}
-
-        <span
+        <div
           className={cn(
-            "mt-1 block text-right font-mono text-[0.6875rem] tabular-nums",
-            isPolaria ? "text-white/55" : "text-ink-500",
+            "rounded-2xl px-3.5 py-2.5 text-[0.9375rem] leading-relaxed shadow-sm",
+            isPolaria
+              ? "rounded-bl-md bg-brand-600 text-white"
+              : "rounded-br-md bg-paper-200 text-ink-900",
           )}
         >
-          {message.time}
-        </span>
+          <p className="whitespace-pre-line text-pretty">{message.text}</p>
+
+          {message.card && <ConfirmationCardView card={message.card} />}
+
+          <span
+            className={cn(
+              "mt-1 block text-right font-mono text-[0.6875rem] tabular-nums",
+              isPolaria ? "text-white/55" : "text-ink-500",
+            )}
+          >
+            {message.time}
+          </span>
+        </div>
+
+        {message.interactive && (
+          <MessageActions
+            interactive={message.interactive}
+            disabled={message.actionsResolved ?? false}
+            onSelect={onSelectAction}
+          />
+        )}
       </div>
     </motion.div>
   );
@@ -66,8 +88,7 @@ function ConfirmationCardView({ card }: { card: NonNullable<ChatMessage["card"]>
 
         <dt className="text-ink-500">Cuándo</dt>
         <dd className="text-right font-medium">
-          {card.day} ·{" "}
-          <span className="font-mono tabular-nums">{card.time}</span>
+          {card.day} · <span className="font-mono tabular-nums">{card.time}</span>
         </dd>
 
         <dt className="text-ink-500">Precio</dt>

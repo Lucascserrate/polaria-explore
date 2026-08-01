@@ -6,6 +6,7 @@ import { createInitialState, simReducer } from "@/features/simulator/engine/redu
 import { resolveTurn } from "@/features/simulator/engine/graph";
 import { autoplayScript, typingSpeedMs } from "@/features/simulator/data/autoplay";
 import { browsingSuggestions } from "@/features/simulator/data/suggestions";
+import type { BarberId } from "@/features/simulator/types";
 
 /**
  * Orquesta el motor: encola los mensajes de Polaria con sus tiempos de
@@ -23,7 +24,7 @@ export function useSimulator() {
   const prefersReduced = useReducedMotion() ?? false;
 
   // Callback ref en vez de RefObject: así el objeto que devuelve el hook no
-  // contiene refs y la UI puede leer `api.state` durante el render sin que el
+  // contiene refs y la UI puede leer `state` durante el render sin que el
   // analizador de React lo tome por acceso a una ref.
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const stateRef = useRef(state);
@@ -67,9 +68,12 @@ export function useSimulator() {
     });
   }, []);
 
-  /** Entrega un turno completo de Polaria. No distingue quién originó el mensaje. */
+  /**
+   * Entrega un turno completo de Polaria. No distingue si el mensaje vino de
+   * un toque en una opción o de texto escrito a mano.
+   */
   const deliver = useCallback(
-    async (rawText: string) => {
+    async (rawText: string, actionId?: string) => {
       const text = rawText.trim();
       if (!text || busyRef.current) return;
 
@@ -85,7 +89,8 @@ export function useSimulator() {
 
       dispatch({ type: "USER_MESSAGE", text });
 
-      const turn = resolveTurn(text, stateRef.current.context);
+      const { context, agendas } = stateRef.current;
+      const turn = resolveTurn(text, context, agendas, actionId);
       if (turn.context) dispatch({ type: "PATCH_CONTEXT", patch: turn.context });
 
       // Los efectos aterrizan junto al mensaje que lleva la tarjeta de
@@ -102,7 +107,12 @@ export function useSimulator() {
           return finish();
         }
 
-        dispatch({ type: "BOT_MESSAGE", text: message.text, card: message.card });
+        dispatch({
+          type: "BOT_MESSAGE",
+          text: message.text,
+          card: message.card,
+          interactive: message.interactive,
+        });
 
         if (i === applyAt && turn.effects?.length) {
           // Pequeño respiro para que se lea el mensaje antes de que la agenda
@@ -132,7 +142,7 @@ export function useSimulator() {
     }
   }, []);
 
-  /** Envío iniciado por la persona: siempre corta el autoplay. */
+  /** Texto escrito a mano. Siempre corta el autoplay. */
   const send = useCallback(
     (text: string) => {
       abortAutoplay();
@@ -140,6 +150,19 @@ export function useSimulator() {
     },
     [abortAutoplay, deliver],
   );
+
+  /** Toque en una opción del flujo guiado. */
+  const selectAction = useCallback(
+    (actionId: string, label: string) => {
+      abortAutoplay();
+      void deliver(label, actionId);
+    },
+    [abortAutoplay, deliver],
+  );
+
+  const setActiveBarber = useCallback((barberId: BarberId) => {
+    dispatch({ type: "SET_ACTIVE_BARBER", barberId });
+  }, []);
 
   /** Escribe el texto carácter por carácter en el compositor. */
   const typeInto = useCallback(
@@ -172,11 +195,16 @@ export function useSimulator() {
 
       const run = runRef.current;
       if (!(await wait(step.delayBefore, run))) break;
-      if (!(await typeInto(step.text, run))) break;
-      if (!(await wait(260, run))) break;
-      if (abortedRef.current) break;
 
-      await deliver(step.text);
+      if (step.kind === "type") {
+        if (!(await typeInto(step.text, run))) break;
+        if (!(await wait(260, run))) break;
+        if (abortedRef.current) break;
+        await deliver(step.text);
+      } else {
+        if (abortedRef.current) break;
+        await deliver(step.label, step.actionId);
+      }
     }
 
     if (aliveRef.current) dispatch({ type: "SET_PHASE", phase: "live" });
@@ -218,6 +246,8 @@ export function useSimulator() {
     draft,
     setDraft,
     send,
+    selectAction,
+    setActiveBarber,
     reset,
     isBusy,
     /** Callback ref: se pasa tal cual al `ref` del contenedor del simulador. */

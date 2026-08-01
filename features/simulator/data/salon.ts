@@ -1,4 +1,4 @@
-import type { AgendaSlot } from "@/features/simulator/types";
+import type { AgendaSlot, Barber, BarberId } from "@/features/simulator/types";
 
 /**
  * El negocio ficticio de la simulación.
@@ -32,7 +32,26 @@ export const salon = {
 
 export type ServiceKey = (typeof salon.services)[number]["key"];
 
-export function serviceByKey(key: string) {
+/**
+ * Dos profesionales con agendas deliberadamente distintas.
+ *
+ * En una barbería real la gente vuelve siempre con el mismo barbero, y cada
+ * uno tiene su propia disponibilidad. Que el visitante vea cambiar los
+ * horarios al cambiar de profesional es lo que demuestra que Polaria gestiona
+ * agendas de verdad y no sólo contesta mensajes.
+ */
+export const barbers: Barber[] = [
+  { id: "martin", name: "Martín", role: "Fade, barba y diseño" },
+  { id: "rocio", name: "Rocío", role: "Color, corte y peinado" },
+];
+
+export const ANY_BARBER = "any" as const;
+
+export function barberById(id: BarberId | null | undefined) {
+  return barbers.find((b) => b.id === id) ?? barbers[0];
+}
+
+export function serviceByKey(key: string | null | undefined) {
   return salon.services.find((s) => s.key === key) ?? salon.services[0];
 }
 
@@ -40,26 +59,58 @@ export function formatPrice(amount: number) {
   return `${salon.currency} ${amount}`;
 }
 
-/** Lista de precios lista para pegar en un mensaje. */
-export function priceList() {
-  return salon.services
-    .map((s) => `${s.label} — ${formatPrice(s.price)}`)
-    .join("\n");
+/** Agenda inicial de cada profesional para el lunes. */
+export const initialAgendas: Record<BarberId, AgendaSlot[]> = {
+  // Martín está casi lleno: es el que todos piden.
+  martin: [
+    { time: "09:00", state: "busy", label: "Corte · Álvaro" },
+    { time: "10:00", state: "busy", label: "Barba · Rubén" },
+    { time: "11:30", state: "free" },
+    { time: "14:30", state: "free" },
+    { time: "16:00", state: "busy", label: "Corte + barba · Diego" },
+    { time: "17:00", state: "busy", label: "Corte · Iván" },
+    { time: "18:30", state: "busy", label: "Corte · Seba" },
+  ],
+  // Rocío tiene otros huecos. El contraste es el punto de la demo.
+  rocio: [
+    { time: "09:00", state: "free" },
+    { time: "10:00", state: "busy", label: "Color · Vale" },
+    { time: "11:30", state: "busy", label: "Corte · Ana" },
+    { time: "14:30", state: "busy", label: "Peinado · Luz" },
+    { time: "16:00", state: "free" },
+    { time: "17:00", state: "free" },
+    { time: "18:30", state: "busy", label: "Color · Mica" },
+  ],
+};
+
+/** Cuántos horarios se ofrecen como botones. WhatsApp permite tres. */
+export const MAX_OFFERED_SLOTS = 3;
+
+export function freeSlotsOf(
+  agendas: Record<BarberId, AgendaSlot[]>,
+  barberId: BarberId,
+) {
+  return (agendas[barberId] ?? [])
+    .filter((slot) => slot.state === "free")
+    .map((slot) => slot.time);
 }
 
-/** Agenda inicial del lunes. Los huecos libres son los que se pueden reservar. */
-export const initialAgenda: AgendaSlot[] = [
-  { time: "09:00", state: "busy", label: "Corte · Álvaro" },
-  { time: "10:00", state: "busy", label: "Barba · Rubén" },
-  { time: "11:30", state: "free" },
-  { time: "14:30", state: "free" },
-  { time: "16:00", state: "busy", label: "Corte + barba · Diego" },
-  { time: "17:00", state: "free" },
-  { time: "18:30", state: "busy", label: "Color · Vale" },
-];
+/** Unión ordenada de huecos libres, para cuando no hay preferencia. */
+export function freeSlotsAnyBarber(agendas: Record<BarberId, AgendaSlot[]>) {
+  const times = new Set<string>();
+  for (const barber of barbers) {
+    for (const time of freeSlotsOf(agendas, barber.id)) times.add(time);
+  }
+  return [...times].sort();
+}
 
-/** Horarios que Polaria ofrece primero. Deben existir y estar libres arriba. */
-export const defaultOfferedSlots = ["11:30", "14:30"];
-
-/** Horarios alternativos cuando alguien quiere mover una cita ya tomada. */
-export const alternativeSlots = ["11:30", "17:00"];
+/** Primer profesional con ese horario libre. Resuelve el "sin preferencia". */
+export function firstBarberFreeAt(
+  agendas: Record<BarberId, AgendaSlot[]>,
+  time: string,
+): BarberId {
+  const match = barbers.find((barber) =>
+    agendas[barber.id]?.some((slot) => slot.time === time && slot.state === "free"),
+  );
+  return match?.id ?? barbers[0].id;
+}
