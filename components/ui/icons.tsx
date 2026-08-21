@@ -40,6 +40,13 @@ export const Check = (p: IconProps) => (
   </Icon>
 );
 
+export const CheckDouble = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m1.5 12.5 4 4 8-9" />
+    <path d="m10 16.5 8-9" />
+  </Icon>
+);
+
 export const ChatBubble = (p: IconProps) => (
   <Icon {...p}>
     <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.8-.9L3 21l1.9-5.6A8.7 8.7 0 0 1 4 11.5 8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z" />

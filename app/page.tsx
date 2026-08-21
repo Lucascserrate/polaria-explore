@@ -1,6 +1,7 @@
 import {
   Benefits,
   Control,
+  Demo,
   EarlyAccess,
   Faq,
   FinalCta,
@@ -17,6 +18,7 @@ export default function HomePage() {
   return (
     <main id="top">
       <Hero />
+      <Demo />
       <Control />
       <Setup />
       <Benefits />

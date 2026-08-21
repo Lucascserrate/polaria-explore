@@ -1,4 +1,5 @@
 export { Hero } from "@/sections/hero";
+export { Demo } from "@/sections/demo";
 export { Control } from "@/sections/control";
 export { Setup } from "@/sections/setup";
 export { Benefits } from "@/sections/benefits";
