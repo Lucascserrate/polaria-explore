@@ -1,5 +1,5 @@
 import { booking, dayNames } from "@/content/booking";
-import type { BusinessStatus } from "./types";
+import type { BusinessStatus } from "@/services/booking/types";
 
 /**
  * Formato de precios, duraciones y horas.

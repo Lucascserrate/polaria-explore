@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { booking } from "@/content/booking";
-import { getBusinessProfile } from "@/features/booking/api";
+import { getBusinessProfile } from "@/services/booking/server/business";
 import {
   MobileBookingBar,
   ServiceList,

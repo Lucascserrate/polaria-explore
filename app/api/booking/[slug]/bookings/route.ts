@@ -1,5 +1,6 @@
-import { createBooking, toErrorResponse } from "@/features/booking/api";
-import type { CreateBookingInput } from "@/features/booking/types";
+import { createBooking } from "@/services/booking/server/bookings";
+import { toErrorResponse } from "@/services/booking/server/request";
+import type { CreateBookingInput } from "@/services/booking/types";
 
 /**
  * Crea la reserva.

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useBookingFlow } from "../useBookingFlow";
-import type { PublicBusinessProfile, PublicService } from "../types";
+import type { PublicBusinessProfile, PublicService } from "@/services/booking/types";
 import { BookingDialog } from "./BookingDialog";
 
 /**

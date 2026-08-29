@@ -101,15 +101,48 @@ Las rutas estáticas ganan sobre `[businessSlug]`, así que `/privacy` sigue
 siendo la política de privacidad. Esos nombres están reservados del lado del
 backend (`RESERVED_SLUGS`) para que ningún negocio quede en una URL inalcanzable.
 
+## Datos: `services/` y React Query
+
+Todas las peticiones viven en `services/`, una por archivo, y ninguna en un
+componente. La regla para saber dónde va algo: **si es una petición, es un
+servicio; si es una petición que la pantalla observa, además tiene un hook.**
+
+```
+services/booking/
+  types.ts            el contrato de la API (la única copia)
+  request.ts          transporte del navegador → /api/booking/...
+  keys.ts             las claves de React Query
+  staff.ts  days.ts  slots.ts  bookings.ts      un servicio por archivo
+  hooks/
+    useStaff.ts  useDays.ts  useSlots.ts  useCreateBooking.ts
+  server/
+    request.ts        transporte del servidor → API de Polaria (server-only)
+    business.ts  staff.ts  days.ts  slots.ts  bookings.ts
+```
+
+- **`services/booking/server/` es `server-only`.** Si alguien lo importa desde un
+  componente de cliente, el build falla en lugar de mandar la URL interna de la
+  API al navegador. El navegador habla con `app/api/booking/[slug]/*`, que son
+  pasamanos: reenvían desde el servidor. Así no hay que abrirle CORS a este
+  dominio.
+- **El perfil del negocio no pasa por React Query.** Se pide en el servidor
+  durante el render: cuando el HTML llega, el dato ya está en la página.
+- **Los horarios no se cachean nunca** (`staleTime: 0`, `gcTime: 0` en
+  `useSlots`). Un negocio abierto o un precio pueden llegar con un minuto de
+  atraso; un turno que ya se ocupó, no. Lo demás —equipo, días con atención—
+  vive cinco minutos.
+- **Una clave por consulta reemplaza al `AbortController`.** El riesgo de que la
+  respuesta de un día pise la de otro no se resuelve: deja de existir.
+- **El `QueryClientProvider` sólo envuelve `app/(booking)`**
+  (`components/providers/query-provider.tsx`). La landing no pide nada.
+
 ## La página de reservas
 
-- **`features/booking/` es un módulo cerrado.** No importa nada de `sections/`.
+- **`features/booking/` es la interfaz, no los datos.** No importa nada de
+  `sections/`, y sus peticiones salen de `services/booking/hooks/`.
 - **No hay lógica de reservas acá.** Disponibilidad, asignación de profesional y
   creación de la cita las resuelve la API de Polaria, que es la misma que atiende
   WhatsApp y el panel. Si aparece un cálculo de horarios en este repo, está mal.
-- **`features/booking/api.ts` es `server-only`.** El navegador habla con
-  `app/api/booking/[slug]/*`, que son pasamanos: reenvían desde el servidor. Así
-  la URL de la API no viaja al HTML y no hay que abrirle CORS a este dominio.
 - **Sin fotos, y sin huecos de fotos.** `BusinessCover` es el lugar reservado
   para cuando existan; hoy es una banda neutra.
 - Los pasos del flujo son los mismos que los de la reserva guiada de WhatsApp

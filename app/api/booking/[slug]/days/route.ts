@@ -1,4 +1,5 @@
-import { getServiceableDays, toErrorResponse } from "@/features/booking/api";
+import { getServiceableDays } from "@/services/booking/server/days";
+import { toErrorResponse } from "@/services/booking/server/request";
 
 /**
  * Los días que el negocio atiende, para no dejar tocar una fecha que no lleva a

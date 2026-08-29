@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { booking } from "@/content/booking";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatPrice } from "../format";
-import type { PublicBusinessProfile, PublicService } from "../types";
+import type { PublicBusinessProfile, PublicService } from "@/services/booking/types";
 import { useBooking } from "./BookingProvider";
 
 /**

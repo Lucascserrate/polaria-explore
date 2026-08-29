@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { booking } from "@/content/booking";
 import { site } from "@/config/site";
 
@@ -18,7 +19,10 @@ export default function BookingLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex min-h-full flex-col bg-paper-50">
-      <div className="flex-1">{children}</div>
+      {/* Sólo este grupo de rutas pide datos al backend desde el navegador. */}
+      <QueryProvider>
+        <div className="flex-1">{children}</div>
+      </QueryProvider>
 
       <footer className="px-5 py-8 text-center text-sm text-ink-500">
         {booking.footer.poweredBy}{" "}

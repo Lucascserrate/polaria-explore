@@ -1,6 +1,6 @@
 import { booking } from "@/content/booking";
 import { directionsUrl } from "../location";
-import type { PublicBusinessProfile } from "../types";
+import type { PublicBusinessProfile } from "@/services/booking/types";
 import { BookNowButton } from "./BookButton";
 import { StatusPill } from "./BusinessHeader";
 

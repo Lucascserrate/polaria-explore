@@ -2,7 +2,7 @@ import { booking } from "@/content/booking";
 import { cn } from "@/lib/utils";
 import { describeStatus } from "../format";
 import { directionsUrl } from "../location";
-import type { PublicBusinessProfile } from "../types";
+import type { PublicBusinessProfile } from "@/services/booking/types";
 
 /**
  * Quién es el negocio y si está abierto. Nada más.

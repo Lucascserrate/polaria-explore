@@ -5,7 +5,7 @@ import { booking } from "@/content/booking";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatLongDate, formatPrice, formatTime } from "../format";
 import type { BookingFlowState, BookingStep } from "../useBookingFlow";
-import type { PublicBusinessProfile } from "../types";
+import type { PublicBusinessProfile } from "@/services/booking/types";
 import {
   DetailsStep,
   DoneStep,

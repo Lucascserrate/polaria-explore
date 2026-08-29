@@ -1,4 +1,5 @@
-import { getStaffForService, toErrorResponse } from "@/features/booking/api";
+import { getStaffForService } from "@/services/booking/server/staff";
+import { toErrorResponse } from "@/services/booking/server/request";
 
 /**
  * Los profesionales que hacen un servicio.

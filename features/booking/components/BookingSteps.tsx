@@ -17,7 +17,7 @@ import type {
   PublicService,
   PublicSlot,
   PublicStaff,
-} from "../types";
+} from "@/services/booking/types";
 
 /**
  * El cuerpo de cada paso del flujo.

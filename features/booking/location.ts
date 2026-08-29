@@ -1,4 +1,4 @@
-import type { PublicBusinessProfile } from "./types";
+import type { PublicBusinessProfile } from "@/services/booking/types";
 
 /**
  * El enlace de "Cómo llegar".

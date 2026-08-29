@@ -1,21 +1,19 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { booking } from "@/content/booking";
-import {
-  BookingRequestError,
-  fetchDays,
-  fetchSlots,
-  fetchStaff,
-  submitBooking,
-} from "./client";
+import { useCallback, useState } from 'react';
+import { booking } from '@/content/booking';
+import { BookingRequestError } from '@/services/booking/request';
+import { useCreateBooking } from '@/services/booking/hooks/useCreateBooking';
+import { useDays } from '@/services/booking/hooks/useDays';
+import { useSlots } from '@/services/booking/hooks/useSlots';
+import { useStaff } from '@/services/booking/hooks/useStaff';
 import type {
-  PublicBookingConfirmation,
-  PublicBusinessProfile,
-  PublicService,
-  PublicSlot,
-  PublicStaff,
-} from "./types";
+	PublicBookingConfirmation,
+	PublicBusinessProfile,
+	PublicService,
+	PublicSlot,
+	PublicStaff,
+} from '@/services/booking/types';
 
 /**
  * El flujo de reserva, con los mismos pasos que la reserva guiada de WhatsApp:
@@ -33,9 +31,27 @@ import type {
  *
  * El hook no sabe nada de disponibilidad: pide y muestra. Qué horario existe lo
  * decide el backend, y el que se elige se revalida al confirmar.
+ *
+ * ---
+ *
+ * **Qué cambió al pasar a React Query.** Antes este archivo llevaba a mano un
+ * `AbortController`, un `loading`, un `error` y las listas ya pedidas. Ahora
+ * cada dato es una consulta de `services/booking/hooks/`, y lo que queda acá es
+ * lo único que React Query no puede saber: en qué paso está la persona, qué
+ * eligió y a dónde vuelve.
+ *
+ * De ahí salen dos consecuencias que valen la pena:
+ *
+ * 1. **La carrera desapareció en lugar de resolverse.** El riesgo era que la
+ *    respuesta del primer día pisara la del tercero cuando alguien toca tres
+ *    días seguidos. Con una clave por consulta eso no puede pasar: la pantalla
+ *    lee la entrada del día que está marcado, y las demás se cancelan solas.
+ * 2. **Casi todo el estado se deriva.** `days`, `slots`, `loading` y `error`
+ *    salen de las consultas; no hay un `setState` que pueda quedar desfasado de
+ *    lo que se está pidiendo.
  */
 
-export type BookingStep = "service" | "staff" | "slot" | "details" | "done";
+export type BookingStep = 'service' | 'staff' | 'slot' | 'details' | 'done';
 
 /** Cuántos días ofrece el selector. Cuatro semanas alcanzan para una barbería. */
 const DAYS_AHEAD = 28;
@@ -51,390 +67,308 @@ const DAYS_AHEAD = 28;
 const AUTO_ADVANCE_LIMIT = 3;
 
 export type BookingFlowState = {
-  step: BookingStep;
-  service: PublicService | null;
-  /** `null` con `staffResolved` en true es "cualquier profesional". */
-  staff: PublicStaff | null;
-  staffOptions: PublicStaff[];
-  days: string[];
-  date: string | null;
-  slots: PublicSlot[];
-  slot: PublicSlot | null;
-  confirmation: PublicBookingConfirmation | null;
-  /**
-   * Lo que el cliente escribió de sí mismo.
-   *
-   * Vive en el flujo y no dentro del paso de datos porque el paso se desmonta:
-   * cuando el horario se ocupa mientras alguien termina de escribir su nombre,
-   * se lo manda de vuelta a elegir otro, y volver a pedirle el nombre y el
-   * teléfono sería castigarlo por una carrera que perdió sin enterarse.
-   */
-  customer: { name: string; phone: string };
-  loading: boolean;
-  submitting: boolean;
-  error: string | null;
-  /** Hay a dónde volver, o el paso actual es el primero que se mostró. */
-  canGoBack: boolean;
+	step: BookingStep;
+	service: PublicService | null;
+	/** `null` estando el paso resuelto es "cualquier profesional". */
+	staff: PublicStaff | null;
+	staffOptions: PublicStaff[];
+	days: string[];
+	date: string | null;
+	slots: PublicSlot[];
+	slot: PublicSlot | null;
+	confirmation: PublicBookingConfirmation | null;
+	/**
+	 * Lo que el cliente escribió de sí mismo.
+	 *
+	 * Vive en el flujo y no dentro del paso de datos porque el paso se desmonta:
+	 * cuando el horario se ocupa mientras alguien termina de escribir su nombre,
+	 * se lo manda de vuelta a elegir otro, y volver a pedirle el nombre y el
+	 * teléfono sería castigarlo por una carrera que perdió sin enterarse.
+	 */
+	customer: { name: string; phone: string };
+	loading: boolean;
+	submitting: boolean;
+	error: string | null;
+	/** Hay a dónde volver, o el paso actual es el primero que se mostró. */
+	canGoBack: boolean;
 };
 
 export function useBookingFlow(profile: PublicBusinessProfile) {
-  const [open, setOpen] = useState(false);
-  const [history, setHistory] = useState<BookingStep[]>([]);
-  const [state, setState] = useState<BookingFlowState>(initialState);
+	const slug = profile.slug;
 
-  /**
-   * Cancela lo que quedó pidiéndose al cambiar de paso o de fecha.
-   *
-   * Sin esto, tocar tres días seguidos deja tres consultas en vuelo y gana la
-   * que conteste última, que puede ser la del primer día: la lista mostraría
-   * horarios de una fecha distinta de la marcada.
-   */
-  const pending = useRef<AbortController | null>(null);
+	const [open, setOpen] = useState(false);
+	const [history, setHistory] = useState<BookingStep[]>([]);
+	const [rawStep, setRawStep] = useState<BookingStep>('service');
+	const [service, setService] = useState<PublicService | null>(null);
+	const [slot, setSlot] = useState<PublicSlot | null>(null);
+	const [customer, setCustomer] = useState({ name: '', phone: '' });
 
-  const run = useCallback(
-    async <T,>(
-      task: (signal: AbortSignal) => Promise<T>,
-      onDone: (value: T) => void,
-    ) => {
-      pending.current?.abort();
-      const controller = new AbortController();
-      pending.current = controller;
+	/**
+	 * La elección de profesional, separada en dos.
+	 *
+	 * `chosen` existe porque `null` es una respuesta válida —"cualquiera"— y no
+	 * se puede distinguir de "todavía no eligió" mirando sólo el valor.
+	 */
+	const [staffChoice, setStaffChoice] = useState<{
+		chosen: boolean;
+		value: PublicStaff | null;
+	}>({ chosen: false, value: null });
 
-      setState((current) => ({ ...current, loading: true, error: null }));
+	/** El día que el cliente tocó. `null` = el flujo elige por él. */
+	const [manualDate, setManualDate] = useState<string | null>(null);
 
-      try {
-        const value = await task(controller.signal);
-        if (controller.signal.aborted) return;
-        onDone(value);
-      } catch (error) {
-        if (controller.signal.aborted || isAbort(error)) return;
-        setState((current) => ({
-          ...current,
-          loading: false,
-          error: messageOf(error),
-        }));
-      } finally {
-        if (pending.current === controller) {
-          pending.current = null;
-          setState((current) => ({ ...current, loading: false }));
-        }
-      }
-    },
-    [],
-  );
+	/* --- Datos ------------------------------------------------------------- */
 
-  useEffect(() => () => pending.current?.abort(), []);
+	const staffQuery = useStaff(slug, open && service ? service.id : null);
+	const staffOptions = staffQuery.data ?? [];
 
-  const goTo = useCallback((step: BookingStep) => {
-    setHistory((current) => [...current, step]);
-    setState((current) => ({ ...current, step, error: null }));
-  }, []);
+	/**
+	 * Con un solo profesional no se pregunta: queda elegido y el paso se saltea.
+	 *
+	 * Es el caso del barbero que trabaja solo, para quien un paso de "elegí
+	 * profesional" con una única tarjeta sería un trámite. Se deriva de la
+	 * consulta en lugar de navegar desde un efecto: así el paso nunca llega a
+	 * pintarse con una sola opción y no queda un "Volver" que lleva a una
+	 * pregunta sin respuestas posibles.
+	 */
+	const autoResolvedStaff = staffQuery.isSuccess && staffOptions.length <= 1;
+	const staff = staffChoice.chosen
+		? staffChoice.value
+		: (autoResolvedStaff ? (staffOptions[0] ?? null) : null);
+	const staffSettled = staffChoice.chosen || autoResolvedStaff;
 
-  /**
-   * Cambia el paso actual sin dejar rastro en el historial.
-   *
-   * Lo usa el salteo del profesional: el paso ya estaba en pantalla —cargando—
-   * cuando se descubre que hay uno solo, y apilarlo dejaría un "Volver" que
-   * lleva a una pregunta sin respuestas posibles.
-   */
-  const replaceWith = useCallback((step: BookingStep) => {
-    setHistory((current) => [...current.slice(0, -1), step]);
-    setState((current) => ({ ...current, step, error: null }));
-  }, []);
+	const step: BookingStep =
+		rawStep === 'staff' && autoResolvedStaff ? 'slot' : rawStep;
 
-  /**
-   * Carga los horarios del primer día de `candidates` que tenga alguno, y lo
-   * deja marcado.
-   *
-   * La fecha y su lista se escriben juntas, en un solo `setState` y recién al
-   * final: una fecha marcada con los horarios de otra es un estado que no
-   * significa nada, y hacerlo por partes lo volvería posible.
-   *
-   * **Por qué recorre varios días.** El backend descarta los días que el
-   * negocio no atiende, pero no mira la agenda: un lunes con todo tomado sigue
-   * siendo un día "con atención". Sin esto, abrir la reserva en una barbería
-   * llena empieza con un "no quedan horarios", que es la peor primera pantalla
-   * posible cuando sí hay turnos el martes. Cuando el cliente toca un día
-   * concreto, en cambio, `candidates` trae uno solo: ahí decir que ese día está
-   * completo es la respuesta correcta, no un problema que haya que esquivar.
-   */
-  const loadSlotsFrom = useCallback(
-    (
-      service: PublicService,
-      staff: PublicStaff | null,
-      candidates: string[],
-    ) => {
-      if (candidates.length === 0) return;
+	const onSlotStep = open && step === 'slot' && service !== null && staffSettled;
+	const serviceParams = service
+		? { serviceId: service.id, staffId: staff?.id }
+		: null;
 
-      setState((current) => ({
-        ...current,
-        date: candidates[0],
-        slots: [],
-        slot: null,
-      }));
+	const daysQuery = useDays(slug, onSlotStep ? serviceParams : null);
+	const days = (daysQuery.data ?? []).slice(0, DAYS_AHEAD);
 
-      void run(
-        async (signal) => {
-          const probed = candidates.slice(0, AUTO_ADVANCE_LIMIT);
+	/**
+	 * Qué días se preguntan.
+	 *
+	 * Uno solo si el cliente tocó un día: si está completo, la respuesta correcta
+	 * es decírselo, no saltar a otro por su cuenta. Si no eligió, los primeros de
+	 * la lista, porque `days` trae los días con atención y no los que tienen cupo
+	 * — sin esto, abrir la reserva en un negocio lleno empieza con un "no quedan
+	 * horarios" aunque haya turnos pasado mañana.
+	 */
+	const candidates = manualDate ? [manualDate] : days.slice(0, AUTO_ADVANCE_LIMIT);
 
-          for (const date of probed) {
-            const slots = await fetchSlots(
-              profile.slug,
-              { serviceId: service.id, date, staffId: staff?.id },
-              signal,
-            );
-            if (slots.length > 0) return { date, slots };
-          }
+	const slotsQuery = useSlots(
+		slug,
+		onSlotStep && serviceParams && candidates.length > 0
+			? { ...serviceParams, candidates }
+			: null,
+	);
 
-          // Ninguno tenía cupo: se muestra el primero vacío, que es el que el
-          // cliente esperaba ver.
-          return { date: candidates[0], slots: [] };
-        },
-        ({ date, slots }) =>
-          setState((current) => ({ ...current, date, slots })),
-      );
-    },
-    [profile.slug, run],
-  );
+	/*
+	 * El día marcado mientras la consulta viaja es el que el cliente tocó; cuando
+	 * contesta, el que resolvió el servidor. Nunca se mezclan: `slots` sale de la
+	 * misma respuesta que `date`, así que no existe el estado "esta fecha con los
+	 * horarios de otra".
+	 */
+	const date = slotsQuery.data?.date ?? manualDate ?? days[0] ?? null;
+	const slots = slotsQuery.data?.slots ?? [];
 
-  /**
-   * Abre el paso de horarios: pide los días con atención y arranca en el
-   * primero que tenga cupo. Que el selector nazca en un día que sirve es lo que
-   * evita que el primer contacto con la reserva sea un "no quedan horarios".
-   */
-  const openSlotStep = useCallback(
-    (service: PublicService, staff: PublicStaff | null, replace = false) => {
-      if (replace) replaceWith("slot");
-      else goTo("slot");
-      setState((current) => ({ ...current, days: [], slots: [], slot: null }));
+	const create = useCreateBooking(slug);
 
-      void run(
-        (signal) =>
-          fetchDays(
-            profile.slug,
-            { serviceId: service.id, staffId: staff?.id },
-            signal,
-          ),
-        (all) => {
-          const days = all.slice(0, DAYS_AHEAD);
-          setState((current) => ({ ...current, days }));
-          loadSlotsFrom(service, staff, days);
-        },
-      );
-    },
-    [goTo, loadSlotsFrom, profile.slug, replaceWith, run],
-  );
+	/* --- Navegación -------------------------------------------------------- */
 
-  const selectStaff = useCallback(
-    (staff: PublicStaff | null) => {
-      setState((current) => ({ ...current, staff }));
-      if (state.service) openSlotStep(state.service, staff);
-    },
-    [openSlotStep, state.service],
-  );
+	const goTo = useCallback(
+		(next: BookingStep) => {
+			create.reset();
+			setHistory((current) => [...current, next]);
+			setRawStep(next);
+		},
+		[create],
+	);
 
-  /**
-   * Elige el servicio y decide el paso siguiente según cuánta gente lo hace.
-   *
-   * Con un solo profesional no se pregunta y queda elegido: es el caso del
-   * barbero que trabaja solo, para quien un paso de "elegí profesional" con una
-   * única tarjeta sería un trámite.
-   */
-  const selectService = useCallback(
-    (service: PublicService) => {
-      setState((current) => ({
-        ...current,
-        service,
-        staff: null,
-        staffOptions: [],
-      }));
+	const start = useCallback(
+		(from?: PublicService) => {
+			create.reset();
+			setSlot(null);
+			setCustomer({ name: '', phone: '' });
+			setManualDate(null);
+			setStaffChoice({ chosen: false, value: null });
+			setOpen(true);
 
-      /*
-       * Se entra al paso de profesional **antes** de saber cuántos hay, y si
-       * resulta haber uno solo se reemplaza por el de horarios. Al revés
-       * —esperar la respuesta y recién entonces navegar— la pantalla se queda
-       * en lo anterior sin decir nada, que es justo cuando el cliente cree que
-       * el botón no funcionó y lo vuelve a tocar.
-       */
-      goTo("staff");
+			// Entrando por "Reservar" de un servicio concreto, ese paso ya está
+			// contestado y el historial arranca en el de profesional: no hay a dónde
+			// volver.
+			setService(from ?? null);
+			setHistory([from ? 'staff' : 'service']);
+			setRawStep(from ? 'staff' : 'service');
+		},
+		[create],
+	);
 
-      void run(
-        (signal) => fetchStaff(profile.slug, service.id, signal),
-        (staffOptions) => {
-          setState((current) => ({ ...current, staffOptions }));
-          if (staffOptions.length > 1) return;
+	const close = useCallback(() => setOpen(false), []);
 
-          const only = staffOptions[0] ?? null;
-          setState((current) => ({ ...current, staff: only }));
-          openSlotStep(service, only, true);
-        },
-      );
-    },
-    [goTo, openSlotStep, profile.slug, run],
-  );
+	const back = useCallback(() => {
+		// El primer paso mostrado no tiene atrás: ahí "Volver" es cerrar.
+		if (history.length <= 1) {
+			setOpen(false);
+			return;
+		}
 
-  const start = useCallback(
-    (service?: PublicService) => {
-      setState(initialState);
-      setHistory([]);
-      setOpen(true);
+		create.reset();
+		setSlot(null);
+		setHistory((current) => {
+			const next = current.slice(0, -1);
+			setRawStep(next[next.length - 1]);
+			return next;
+		});
+	}, [create, history.length]);
 
-      // Entrando por "Reservar" de un servicio concreto, ese paso ya está
-      // contestado y el historial arranca vacío: no hay a dónde volver.
-      if (service) {
-        selectService(service);
-        return;
-      }
+	/* --- Elecciones -------------------------------------------------------- */
 
-      setHistory(["service"]);
-      setState((current) => ({ ...current, step: "service" }));
-    },
-    [selectService],
-  );
+	const selectService = useCallback(
+		(next: PublicService) => {
+			setService(next);
+			setStaffChoice({ chosen: false, value: null });
+			setManualDate(null);
+			setSlot(null);
+			goTo('staff');
+		},
+		[goTo],
+	);
 
-  const close = useCallback(() => {
-    pending.current?.abort();
-    setOpen(false);
-  }, []);
+	const selectStaff = useCallback(
+		(next: PublicStaff | null) => {
+			setStaffChoice({ chosen: true, value: next });
+			setManualDate(null);
+			setSlot(null);
+			goTo('slot');
+		},
+		[goTo],
+	);
 
-  const back = useCallback(() => {
-    // El primer paso mostrado no tiene atrás: ahí "Volver" es cerrar.
-    if (history.length <= 1) {
-      close();
-      return;
-    }
+	const selectDate = useCallback((next: string) => {
+		setManualDate(next);
+		setSlot(null);
+	}, []);
 
-    const next = history.slice(0, -1);
-    setHistory(next);
-    setState((current) => ({
-      ...current,
-      step: next[next.length - 1],
-      error: null,
-      slot: null,
-    }));
-  }, [close, history]);
+	const selectSlot = useCallback(
+		(next: PublicSlot) => {
+			setSlot(next);
+			goTo('details');
+		},
+		[goTo],
+	);
 
-  const updateCustomer = useCallback(
-    (customer: { name: string; phone: string }) => {
-      setState((current) => ({ ...current, customer }));
-    },
-    [],
-  );
+	const updateCustomer = useCallback(
+		(next: { name: string; phone: string }) => setCustomer(next),
+		[],
+	);
 
-  const selectSlot = useCallback(
-    (slot: PublicSlot) => {
-      setState((current) => ({ ...current, slot }));
-      goTo("details");
-    },
-    [goTo],
-  );
+	const confirm = useCallback(
+		async (next: { name: string; phone: string }) => {
+			if (!service || !slot) return;
 
-  const confirm = useCallback(
-    async (customer: { name: string; phone: string }) => {
-      const { service, staff, slot } = state;
-      if (!service || !slot) return;
+			setCustomer(next);
 
-      updateCustomer(customer);
+			create.mutate(
+				{
+					serviceId: service.id,
+					staffId: staff?.id,
+					startTime: slot.startTime,
+					customerName: next.name,
+					customerPhone: next.phone,
+				},
+				{
+					onSuccess: () => {
+						setHistory((current) => [...current, 'done']);
+						setRawStep('done');
+					},
+					onError: (error) => {
+						/*
+						 * Perder el horario no es un error del formulario: entre que se
+						 * mostró la lista y el cliente terminó de escribir su nombre, otro
+						 * lo tomó. Se lo devuelve al paso de horarios —sin el paso de datos
+						 * en el historial, para que "Volver" no lo traiga de nuevo acá— y
+						 * la lista se recarga sola, porque la mutación invalida los
+						 * horarios del negocio pase lo que pase.
+						 */
+						if (error instanceof BookingRequestError && error.isSlotTaken) {
+							setSlot(null);
+							setHistory((current) => current.filter((s) => s !== 'details'));
+							setRawStep('slot');
+						}
+					},
+				},
+			);
+		},
+		[create, service, slot, staff],
+	);
 
-      setState((current) => ({ ...current, submitting: true, error: null }));
+	/* --- Lo que ve la pantalla --------------------------------------------- */
 
-      try {
-        const confirmation = await submitBooking(profile.slug, {
-          serviceId: service.id,
-          staffId: staff?.id,
-          startTime: slot.startTime,
-          customerName: customer.name,
-          customerPhone: customer.phone,
-        });
+	const loading =
+		step === 'staff'
+			? staffQuery.isLoading
+			: step === 'slot'
+				? daysQuery.isLoading || slotsQuery.isLoading
+				: false;
 
-        setHistory((current) => [...current, "done"]);
-        setState((current) => ({
-          ...current,
-          step: "done",
-          submitting: false,
-          confirmation,
-        }));
-      } catch (error) {
-        /*
-         * Perder el horario no es un error del formulario: entre que se mostró
-         * la lista y el cliente terminó de escribir su nombre, otro lo tomó. Se
-         * lo devuelve al paso de horarios con la lista ya recargada, que es lo
-         * único que puede hacer al respecto.
-         */
-        if (error instanceof BookingRequestError && error.isSlotTaken) {
-          setState((current) => ({ ...current, submitting: false, slot: null }));
+	/*
+	 * El error del paso en el que está la persona, y sólo ése. Uno de un paso que
+	 * ya quedó atrás no tiene nada que decirle a la pantalla que está mirando.
+	 */
+	const stepError =
+		step === 'staff'
+			? staffQuery.error
+			: step === 'slot'
+				? (daysQuery.error ?? slotsQuery.error)
+				: null;
 
-          if (state.date && state.service) {
-            setHistory((current) =>
-              current.filter((step) => step !== "details"),
-            );
-            setState((current) => ({ ...current, step: "slot" }));
-            loadSlotsFrom(state.service, state.staff, [state.date]);
-          }
-
-          /*
-           * El aviso se escribe **después** de recargar los horarios y no antes:
-           * la recarga limpia el error al empezar la consulta, así que ponerlo
-           * primero lo borraría y el cliente vería la lista actualizarse sola
-           * sin ninguna explicación.
-           */
-          setState((current) => ({
-            ...current,
-            error: booking.flow.errors.slotTaken,
-          }));
-          return;
-        }
-
-        setState((current) => ({
-          ...current,
-          submitting: false,
-          error: messageOf(error),
-        }));
-      }
-    },
-    [loadSlotsFrom, profile.slug, state, updateCustomer],
-  );
-
-  return {
-    open,
-    state: { ...state, canGoBack: history.length > 1 },
-    start,
-    close,
-    back,
-    selectService,
-    selectStaff,
-    // Un solo candidato: si el día que el cliente eligió está completo, la
-    // respuesta correcta es decírselo, no saltar a otro por su cuenta.
-    selectDate: (date: string) => {
-      if (state.service) loadSlotsFrom(state.service, state.staff, [date]);
-    },
-    selectSlot,
-    updateCustomer,
-    confirm,
-  };
+	return {
+		open,
+		state: {
+			step,
+			service,
+			staff,
+			staffOptions,
+			days,
+			date,
+			slots,
+			slot,
+			confirmation: create.data ?? null,
+			customer,
+			loading,
+			submitting: create.isPending,
+			error: messageOf(create.error) ?? messageOf(stepError),
+			canGoBack: history.length > 1,
+		} satisfies BookingFlowState,
+		start,
+		close,
+		back,
+		selectService,
+		selectStaff,
+		selectDate,
+		selectSlot,
+		updateCustomer,
+		confirm,
+	};
 }
 
-const initialState: BookingFlowState = {
-  step: "service",
-  service: null,
-  staff: null,
-  staffOptions: [],
-  days: [],
-  date: null,
-  slots: [],
-  slot: null,
-  confirmation: null,
-  customer: { name: "", phone: "" },
-  loading: false,
-  submitting: false,
-  error: null,
-  canGoBack: false,
-};
+/**
+ * El texto que se muestra.
+ *
+ * El 409 se traduce acá y no en el `onError`: el mensaje que manda la API
+ * describe el conflicto, pero lo que el cliente necesita leer es qué hacer
+ * ahora, que es elegir otro horario de la lista que se acaba de recargar.
+ */
+function messageOf(error: unknown): string | null {
+	if (!error) return null;
 
-const isAbort = (error: unknown): boolean =>
-  error instanceof DOMException && error.name === "AbortError";
+	if (error instanceof BookingRequestError) {
+		return error.isSlotTaken ? booking.flow.errors.slotTaken : error.message;
+	}
 
-const messageOf = (error: unknown): string =>
-  error instanceof BookingRequestError
-    ? error.message
-    : booking.flow.errors.generic;
+	return booking.flow.errors.generic;
+}

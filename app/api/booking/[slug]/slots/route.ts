@@ -1,4 +1,5 @@
-import { getSlots, toErrorResponse } from "@/features/booking/api";
+import { getSlots } from "@/services/booking/server/slots";
+import { toErrorResponse } from "@/services/booking/server/request";
 
 /** Horarios disponibles para un servicio y una fecha. Ver `staff/route.ts`. */
 export async function GET(

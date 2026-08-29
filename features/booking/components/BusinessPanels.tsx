@@ -2,7 +2,7 @@ import { booking, dayNames, weekOrder } from "@/content/booking";
 import { cn } from "@/lib/utils";
 import { currentDayOfWeek, trimSeconds } from "../format";
 import { directionsUrl } from "../location";
-import type { PublicBusinessProfile, WeeklyRange } from "../types";
+import type { PublicBusinessProfile, WeeklyRange } from "@/services/booking/types";
 
 /**
  * Lo que se consulta después de haber decidido reservar: horarios y dirección.
