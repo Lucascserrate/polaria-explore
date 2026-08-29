@@ -1,66 +1,52 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
    Polaria — design tokens
 
-   La página es blanco, negro y gris. El color lo pone el producto: las citas de
-   la Agenda, el ámbar de "requiere tu atención", el verde de confirmado. Esa es
-   la regla que gobierna todo lo de abajo, y la razón por la que no existe una
-   escala de marca: si la marca tuviera un color propio competiría con el único
-   color que interesa, que es el de la interfaz real.
+   Negro, blanco y dos grises. No hay color de marca, y es a propósito: el
+   panel de Polaria ya es blanco y negro, así que la landing no tiene que
+   inventarle una identidad distinta a la que el usuario va a ver cuando entre.
 
-   El acento —un celeste cercano a sky-500— tiene tres usos y ninguno más: el
-   halo del hero, el foco del teclado y el punto de "en vivo".
+   Regla del gris: el gris no es una superficie, es una jerarquía. Aparece en el
+   texto secundario, en las líneas de 1px y en una sola banda de fondo. Todo lo
+   demás es blanco puro o negro puro. Si algo se ve apagado, casi siempre es un
+   gris que debería haber sido negro.
 --------------------------------------------------------------------------- */
 
 @theme {
-	/* Tinta — titulares, cuerpo y todo lo que se lee */
-	--color-ink-950: #0b0d10;
-	--color-ink-900: #14171c;
-	--color-ink-800: #22262e;
-	--color-ink-700: #3c424d;
-	--color-ink-600: #5a616e;
-	--color-ink-500: #838a97;
+	/* Tinta */
+	--color-ink-950: #0a0a0a; /* negro: titulares, botones, bandas */
+	--color-ink-900: #17171a; /* cuerpo sobre blanco */
+	--color-ink-800: #2a2a2f;
+	--color-ink-700: #3f3f46;
+	--color-ink-600: #6e6e78; /* texto secundario — el único gris de párrafo */
+	--color-ink-500: #9b9ba4; /* rótulos y metadatos */
 
-	/* Papel — blanco y los grises que lo separan */
+	/* Papel */
 	--color-paper-50: #ffffff;
 	--color-paper-100: #fcfcfd;
-	--color-paper-200: #f5f6f8;
-	--color-paper-300: #e9ebef;
-	--color-paper-400: #d5d9e0;
+	--color-paper-200: #f7f7f8; /* la única banda de fondo gris de la página */
+	--color-paper-300: #ececee; /* líneas de 1px */
+	--color-paper-400: #d8d8dc;
 
-	/* Acento — puntual. Nunca una superficie grande, nunca texto largo. */
+	/*
+	 * Colores de producto.
+	 *
+	 * No son de la marca ni de la landing: viven dentro de la interfaz de
+	 * reservas —confirmado, requiere atención, el foco del teclado— y por eso
+	 * siguen acá aunque la página sea en blanco y negro.
+	 */
 	--color-accent-200: #bae6fd;
 	--color-accent-400: #38bdf8;
 	--color-accent-500: #0ea5e9;
 	--color-accent-600: #0284c7;
 
-	/*
-	 * Compatibilidad transitoria.
-	 *
-	 * Las secciones viejas todavía piden `brand-*`. En vez de romperlas, los
-	 * nombres viejos apuntan a la paleta nueva: la página entera deja de ser azul
-	 * sin reescribir una sola sección. Estos alias se borran en el último paso,
-	 * cuando ya no queden usos.
-	 */
-	--color-brand-50: var(--color-paper-200);
-	--color-brand-100: var(--color-paper-300);
-	--color-brand-200: var(--color-accent-200);
-	--color-brand-300: var(--color-paper-400);
-	--color-brand-400: var(--color-accent-400);
-	--color-brand-500: var(--color-accent-500);
-	--color-brand-600: var(--color-ink-700);
-	--color-brand-700: var(--color-ink-900);
-	--color-brand-900: var(--color-ink-950);
-
-	/* Ámbar — "requiere tu atención". Vive dentro de la interfaz del producto. */
 	--color-attention-50: #fffbeb;
 	--color-attention-100: #fef3c7;
 	--color-attention-400: #fbbf24;
 	--color-attention-500: #f59e0b;
 	--color-attention-700: #b45309;
 
-	/* Verde — confirmado en la agenda. También del producto, no de la marca. */
 	--color-confirm-50: #ecfdf5;
 	--color-confirm-100: #d1fae5;
 	--color-confirm-500: #10b981;
@@ -68,94 +54,15 @@
 	--color-confirm-700: #047857;
 
 	/*
-	 * Una sola familia en todo el sitio.
-	 *
-	 * Es la decisión tipográfica de la página: el contraste lo dan el tamaño y el
-	 * peso, no la mezcla de familias. `--font-mono` apunta a la misma pila a
-	 * propósito — las horas y los precios se alinean con `tabular-nums`, que es lo
-	 * que hacía falta de una monoespaciada, sin traer una segunda descarga.
+	 * Una sola familia. El contraste tipográfico lo dan el tamaño y el peso
+	 * —titulares muy grandes y apretados contra un cuerpo tranquilo—, no la
+	 * mezcla de familias. `--font-mono` apunta a la misma pila a propósito: de
+	 * una monoespaciada sólo necesitábamos `tabular-nums`.
 	 */
 	--font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
 	--font-mono: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
 
-	/* Ritmo vertical de las secciones. Más aire del que parece necesario. */
-	--spacing-section: 8rem;
-	--spacing-section-lg: 11rem;
-
-	/* Curvas compartidas — cualquier animación CSS usa estas */
 	--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-	--ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
-
-	--animate-bubble-in: bubble-in 0.42s var(--ease-out-soft) both;
-	--animate-reveal-in: reveal-in 0.7s var(--ease-out-soft) backwards;
-	--animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
-	--animate-slot-fill: slot-fill 0.7s var(--ease-out-soft) both;
-	--animate-pick-pop: pick-pop 0.5s var(--ease-out-soft) both;
-}
-
-/*
- * Entrada de los bloques.
- *
- * `backwards` y no `both`: el estado base del elemento es visible, y la opacidad
- * cero sólo existe mientras la animación está por delante. Si las animaciones no
- * corren —CSS bloqueado, un motor viejo, una captura headless— el contenido se ve
- * igual. La versión anterior lo escondía con JavaScript y lo revelaba al entrar
- * en pantalla, así que cualquier falla del observador dejaba la página en blanco
- * con el texto presente en el DOM.
- */
-@keyframes reveal-in {
-	from {
-		opacity: 0;
-		transform: translateY(6px);
-	}
-}
-
-@keyframes bubble-in {
-	from {
-		opacity: 0;
-		transform: translateY(8px) scale(0.97);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0) scale(1);
-	}
-}
-
-@keyframes typing-dot {
-	0%,
-	60%,
-	100% {
-		opacity: 0.25;
-		transform: translateY(0);
-	}
-	30% {
-		opacity: 1;
-		transform: translateY(-3px);
-	}
-}
-
-@keyframes slot-fill {
-	from {
-		opacity: 0;
-		transform: scale(0.96);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
-
-/* La opción elegida "se hunde" un instante, como si alguien la tocara. */
-@keyframes pick-pop {
-	0% {
-		transform: scale(1);
-	}
-	35% {
-		transform: scale(0.965);
-	}
-	100% {
-		transform: scale(1);
-	}
 }
 
 /* ---------------------------------------------------------------------------
@@ -181,11 +88,11 @@
 	 * Los titulares van apretados; el cuerpo, no.
 	 *
 	 * A tamaños grandes el espaciado por defecto de la fuente deja huecos que se
-	 * leen como descuido, y cerrarlos es la mitad del efecto de las referencias.
+	 * leen como descuido. Cerrarlos es la mitad del efecto de la referencia.
 	 */
 	h1,
 	h2 {
-		letter-spacing: -0.035em;
+		letter-spacing: -0.038em;
 		text-wrap: balance;
 	}
 
@@ -194,64 +101,56 @@
 	}
 
 	:focus-visible {
-		outline: 2px solid var(--color-accent-500);
+		outline: 2px solid var(--color-ink-950);
 		outline-offset: 2px;
 		border-radius: 4px;
 	}
 
 	::selection {
-		background-color: var(--color-accent-200);
-		color: var(--color-ink-950);
+		background-color: var(--color-ink-950);
+		color: var(--color-paper-50);
 	}
 }
 
 /* ---------------------------------------------------------------------------
-   Utilidades de proyecto
+   Aparición al hacer scroll
+
+   El contenido entra cuando llega a pantalla, como en la referencia. Dos
+   decisiones sostienen esto:
+
+   1. El estado escondido lo pone la clase `js`, que un script inline agrega al
+      <html> antes del primer pintado. Sin JavaScript —o si el observador falla—
+      la página se ve completa y quieta. Nunca al revés: una landing en blanco
+      porque no corrió una animación es un fallo mucho más caro que no animar.
+   2. La animación es una sola —opacidad y ocho píxeles— y dura poco. No hay
+      entradas laterales, escalas ni rebotes: el movimiento acompaña la lectura,
+      no la anuncia.
 --------------------------------------------------------------------------- */
 
-/* Sólo visible para lectores de pantalla. La usamos para anunciar cambios de
-   agenda mientras la conversación avanza. */
-@utility sr-only-live {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	padding: 0;
-	margin: -1px;
-	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
-	white-space: nowrap;
-	border-width: 0;
+@media (prefers-reduced-motion: no-preference) {
+	.js [data-reveal] {
+		opacity: 0;
+	}
+
+	.js [data-reveal='shown'] {
+		animation: reveal-in 0.65s var(--ease-out-soft) both;
+		animation-delay: var(--reveal-delay, 0ms);
+	}
 }
 
-/*
- * El halo del acento.
- *
- * Es el único lugar donde el celeste ocupa superficie, y funciona porque no
- * tiene borde: se escapa por atrás de la interfaz, como en las referencias.
- * Difuminado y a baja opacidad; si se nota como "un círculo", está mal usado.
- */
-@utility glow-accent {
-	background-image: radial-gradient(
-		closest-side,
-		rgb(14 165 233 / 0.16),
-		transparent
-	);
-}
-
-/* Malla de puntos muy tenue para las superficies oscuras. */
-@utility bg-starfield {
-	background-image: radial-gradient(
-		circle at center,
-		rgb(255 255 255 / 0.1) 1px,
-		transparent 1px
-	);
-	background-size: 32px 32px;
+@keyframes reveal-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 /* ---------------------------------------------------------------------------
    Movimiento reducido
-   No desactivamos la simulación: colapsamos duraciones para que la
-   conversación llegue a su estado final de inmediato y siga siendo legible.
 --------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {

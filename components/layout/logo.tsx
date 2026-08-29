@@ -1,46 +1,41 @@
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 /**
- * Wordmark provisional. Todavía no hay logo definitivo, así que la identidad
- * descansa en la tipografía más un glifo de estrella polar. Cuando llegue el
- * logo real, se reemplaza sólo este archivo.
+ * Wordmark provisional: la estrella polar y el nombre, en tinta.
+ *
+ * Es el mismo glifo que ya usa el panel, así que la landing y el producto
+ * abren con la misma firma. Cuando llegue el logo definitivo se reemplaza sólo
+ * este archivo.
  */
 export function Logo({
-  tone = "dark",
-  className,
-  showWordmark = true,
+	tone = 'dark',
+	className,
 }: {
-  /** "dark" = tinta sobre claro. "light" = blanco sobre oscuro. */
-  tone?: "dark" | "light";
-  className?: string;
-  showWordmark?: boolean;
+	/** "dark" = tinta sobre blanco. "light" = blanco sobre negro. */
+	tone?: 'dark' | 'light';
+	className?: string;
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 font-semibold tracking-[-0.03em]",
-        tone === "dark" ? "text-ink-900" : "text-white",
-        className,
-      )}
-    >
-      <StarGlyph
-        className={cn(
-          "size-[1.1em] shrink-0",
-          tone === "dark" ? "text-brand-600" : "text-brand-300",
-        )}
-      />
-      {showWordmark && <span className="text-[1.0625em] leading-none">Polaria</span>}
-    </span>
-  );
+	return (
+		<span
+			className={cn(
+				'inline-flex items-center gap-2 text-[1.0625rem] font-semibold tracking-[-0.03em]',
+				tone === 'dark' ? 'text-ink-950' : 'text-white',
+				className,
+			)}
+		>
+			<StarGlyph className="size-[1.05em] shrink-0" />
+			<span className="leading-none">Polaria</span>
+		</span>
+	);
 }
 
 export function StarGlyph({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M12 1.5c.62 5.6 4.9 9.88 10.5 10.5-5.6.62-9.88 4.9-10.5 10.5-.62-5.6-4.9-9.88-10.5-10.5C7.1 11.38 11.38 7.1 12 1.5Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
+	return (
+		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+			<path
+				d="M12 1.5c.62 5.6 4.9 9.88 10.5 10.5-5.6.62-9.88 4.9-10.5 10.5-.62-5.6-4.9-9.88-10.5-10.5C7.1 11.38 11.38 7.1 12 1.5Z"
+				fill="currentColor"
+			/>
+		</svg>
+	);
 }

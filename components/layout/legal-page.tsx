@@ -12,7 +12,7 @@ export function LegalPage({
   sections: LegalSection[];
 }) {
   return (
-    <main className="bg-paper-50 pb-24 pt-32 sm:pt-36">
+    <main className="pb-24 pt-16 sm:pt-20">
       <Container width="narrow">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink-500">
           Última actualización: {lastUpdated}
@@ -40,7 +40,7 @@ export function LegalPage({
               </div>
 
               {section.bullets && (
-                <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 marker:text-brand-400">
+                <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 marker:text-ink-500">
                   {section.bullets.map((bullet) => (
                     <li key={bullet} className="text-pretty leading-relaxed text-ink-600">
                       {bullet}

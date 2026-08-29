@@ -165,3 +165,22 @@ export const terms: { title: string; intro: string; sections: LegalSection[] } =
 			},
 		],
 	};
+
+/**
+ * Rótulos del encabezado y el pie de /privacy y /terms.
+ *
+ * Con la landing dada de baja, estas dos páginas son todo el sitio de Polaria
+ * que Meta puede visitar. El pie es el único lugar donde quedan el titular, el
+ * contacto y el descargo de marcas: no es decoración, es parte de lo que se
+ * revisa.
+ */
+export const legalChrome = {
+	nav: [
+		{ label: 'Política de privacidad', href: '/privacy' },
+		{ label: 'Términos del servicio', href: '/terms' },
+	],
+	contact: `${site.contactEmail} · ${site.phoneNumber}`,
+	issuer: `${site.legal.entity} · ${site.legal.city}, ${site.legal.country}`,
+	disclaimer:
+		'Polaria es un producto independiente. No está afiliado, patrocinado ni respaldado por Meta Platforms, Inc. ni por Google LLC. WhatsApp y Google Calendar son marcas de sus respectivos titulares.',
+} as const;

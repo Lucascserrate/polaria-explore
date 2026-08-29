@@ -1,43 +1,66 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { fadeUp, transitions, viewportOnce } from "@/config/motion";
-import { cn } from "@/lib/utils";
+import { useEffect, useRef, type ElementType, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 /**
- * Entrada al hacer scroll. Con movimiento reducido se renderiza estático:
- * el contenido nunca depende de la animación para ser visible.
+ * Aparición al entrar en pantalla.
+ *
+ * El estado escondido vive en CSS y depende de la clase `js` del `<html>` (ver
+ * `globals.css` y el script inline de `app/layout.tsx`), no de este componente.
+ * Así, si JavaScript no corre o el observador falla, el contenido se ve igual:
+ * el peor caso es una página sin animación, nunca una página en blanco.
+ *
+ * Una sola animación en todo el sitio, y un `delay` para escalonar hermanos.
+ * Escalonar más de tres o cuatro elementos hace que el último llegue tarde y se
+ * note el truco.
  */
 export function Reveal({
-  children,
-  className,
-  delay = 0,
-  as = "div",
+	children,
+	className,
+	delay = 0,
+	as: Tag = 'div',
 }: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-  as?: "div" | "li" | "article";
+	children: ReactNode;
+	className?: string;
+	/** Milisegundos de retraso, para escalonar hermanos. */
+	delay?: number;
+	as?: ElementType;
 }) {
-  const reduced = useReducedMotion();
-  const MotionTag = motion[as];
+	const ref = useRef<HTMLElement>(null);
 
-  if (reduced) {
-    const Tag = as;
-    return <Tag className={className}>{children}</Tag>;
-  }
+	useEffect(() => {
+		const element = ref.current;
+		if (!element) return;
 
-  return (
-    <MotionTag
-      className={cn(className)}
-      variants={fadeUp}
-      initial="hidden"
-      whileInView="visible"
-      viewport={viewportOnce}
-      transition={{ ...transitions.soft, delay }}
-    >
-      {children}
-    </MotionTag>
-  );
+		if (typeof IntersectionObserver === 'undefined') {
+			element.dataset.reveal = 'shown';
+			return;
+		}
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) continue;
+					element.dataset.reveal = 'shown';
+					observer.disconnect();
+				}
+			},
+			{ rootMargin: '0px 0px -12% 0px' },
+		);
+
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, []);
+
+	return (
+		<Tag
+			ref={ref}
+			data-reveal=""
+			style={delay ? ({ '--reveal-delay': `${delay}ms` } as React.CSSProperties) : undefined}
+			className={cn(className)}
+		>
+			{children}
+		</Tag>
+	);
 }

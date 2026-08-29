@@ -28,29 +28,28 @@ export const site = {
 	currency: 'Bs',
 } as const;
 
-/** Enlaces del footer. Privacy y Terms son requisito de la revisión de Meta. */
+/**
+ * Navegación de la landing.
+ *
+ * Tres anclas y un botón. La referencia tiene menús desplegables porque tiene
+ * cincuenta páginas; nosotros tenemos una, y un menú para tres enlaces es
+ * interfaz de más.
+ */
+export const nav = [
+	{ label: 'Para quién es', href: '#rubros' },
+	{ label: 'Qué hace', href: '#producto' },
+	{ label: 'Cómo empieza', href: '#empezar' },
+] as const;
+
+/** Enlaces del pie. Privacy y Terms son requisito de la revisión de Meta. */
 export const footerLinks = {
 	producto: [
-		{ label: 'Cómo funciona', href: '#como-funciona' },
-		{ label: 'Integraciones', href: '#integraciones' },
-		{ label: 'Preguntas frecuentes', href: '#faq' },
+		{ label: 'Para quién es', href: '#rubros' },
+		{ label: 'Qué hace', href: '#producto' },
+		{ label: 'Cómo empieza', href: '#empezar' },
 	],
 	legal: [
 		{ label: 'Política de privacidad', href: '/privacy' },
 		{ label: 'Términos del servicio', href: '/terms' },
 	],
-} as const;
-
-/**
- * Anclas de navegación. Centralizadas para que el nav, los CTA y el scroll
- * programático no se desincronicen si se reordena la página.
- */
-export const sectionIds = {
-	simulador: 'simulador',
-	control: 'control',
-	comoFunciona: 'como-funciona',
-	beneficios: 'beneficios',
-	integraciones: 'integraciones',
-	accesoAnticipado: 'acceso-anticipado',
-	faq: 'faq',
 } as const;

@@ -56,7 +56,20 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${instrumentSans.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {/*
+          Marca que JavaScript corre, antes de que se pinte nada. De esta clase
+          cuelga el estado inicial de las apariciones al hacer scroll (ver
+          globals.css): sin ella el contenido se ve completo y quieto, que es
+          exactamente lo que queremos si el script no llega a ejecutarse.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js')",
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

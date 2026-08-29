@@ -1,47 +1,58 @@
+import Link from 'next/link';
 import { Container } from '@/components/ui/container';
-import { Cta } from '@/components/ui/cta';
+import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/layout/logo';
-import { getPrimaryCta } from '@/config/cta';
-import { footerLinks } from '@/config/site';
+import { whatsappUrl } from '@/config/cta';
+import { landing } from '@/content/landing';
+import { nav } from '@/config/site';
 
 /**
- * Barra flotante oscura. Se mantiene igual sobre el hero oscuro y sobre las
- * secciones claras, así que no necesita escuchar el scroll ni volverse Client
- * Component para cambiar de color.
+ * Barra fija, blanca, con una línea de 1px abajo.
  *
- * En móvil los enlaces se ocultan y queda sólo el CTA: son tres anclas a
- * secciones por las que se pasa scrolleando igual, y un menú hamburguesa sería
- * más interfaz de la que el contenido justifica.
+ * Nada de fondo translúcido ni de barra que cambia al hacer scroll: la página
+ * es blanca de arriba a abajo salvo dos bandas negras, y una barra que se
+ * transforma al bajar es movimiento que nadie pidió.
+ *
+ * En móvil quedan el logo y el botón. Los tres enlaces son anclas a secciones
+ * por las que se pasa scrolleando igual, y un menú hamburguesa para eso es más
+ * interfaz que contenido.
  */
 export function Navbar() {
-	const primary = getPrimaryCta();
-
 	return (
-		<header className="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-4">
-			<Container width="wide">
+		<header className="sticky top-0 z-50 border-b border-paper-300 bg-white">
+			<Container>
 				<nav
 					aria-label="Principal"
-					className="flex items-center justify-between gap-4 rounded-full bg-ink-900/70 py-2 pl-5 pr-2 ring-1 ring-inset ring-white/10 backdrop-blur-md"
+					className="flex h-16 items-center justify-between gap-6 sm:h-18"
 				>
-					<a href="#top" className="flex shrink-0 rounded-full">
-						<Logo tone="light" className="text-[0.9375rem]" />
-						<span className="sr-only-live">Polaria, ir al inicio</span>
-					</a>
+					<div className="flex items-center gap-10">
+						<Link href="/" className="flex shrink-0 rounded-full">
+							<Logo />
+							<span className="sr-only">Polaria, ir al inicio</span>
+						</Link>
 
-					<ul className="hidden items-center gap-7 md:flex">
-						{footerLinks.producto.map((link) => (
-							<li key={link.href}>
-								<a
-									href={link.href}
-									className="text-sm text-white/60 transition-colors hover:text-white"
-								>
-									{link.label}
-								</a>
-							</li>
-						))}
-					</ul>
+						<ul className="hidden items-center gap-8 md:flex">
+							{nav.map((link) => (
+								<li key={link.href}>
+									<a
+										href={link.href}
+										className="text-[0.9375rem] text-ink-600 transition-colors hover:text-ink-950"
+									>
+										{link.label}
+									</a>
+								</li>
+							))}
+						</ul>
+					</div>
 
-					<Cta action={primary} variant="onDark" size="sm" withArrow={false} />
+					<Button
+						href={whatsappUrl()}
+						size="sm"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						{landing.hero.primary}
+					</Button>
 				</nav>
 			</Container>
 		</header>

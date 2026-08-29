@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "check:engine": "tsx scripts/check-engine.ts",
-    "check": "npm run typecheck && npm run lint && npm run check:engine"
+    "check": "npm run typecheck && npm run lint"
   },
   "dependencies": {
     "clsx": "^2.1.1",

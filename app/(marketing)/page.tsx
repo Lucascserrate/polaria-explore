@@ -1,31 +1,20 @@
-import {
-  Benefits,
-  Control,
-  Demo,
-  EarlyAccess,
-  Faq,
-  FinalCta,
-  Hero,
-  Integrations,
-  Setup,
-} from "@/sections";
+import { Features, FinalCta, Hero, Overview, Verticals } from '@/sections';
 
 /**
  * La página no contiene maquetación ni copy: sólo ordena secciones.
+ *
+ * El recorrido, en cinco movimientos: qué es (hero), para quién (rubros), qué
+ * hace (tres columnas), cómo se ve (dos filas de producto) y probalo (cierre).
  * Reordenar la landing es mover líneas acá.
  */
 export default function HomePage() {
-  return (
-    <main id="top">
-      <Hero />
-      <Demo />
-      <Control />
-      <Setup />
-      <Benefits />
-      <Integrations />
-      <EarlyAccess />
-      <Faq />
-      <FinalCta />
-    </main>
-  );
+	return (
+		<main id="top">
+			<Hero />
+			<Verticals />
+			<Overview />
+			<Features />
+			<FinalCta />
+		</main>
+	);
 }
