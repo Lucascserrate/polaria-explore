@@ -12,14 +12,14 @@ export const easeOutSoft: [number, number, number, number] = [0.22, 1, 0.36, 1];
 export const easeInOutSoft: [number, number, number, number] = [0.65, 0, 0.35, 1];
 
 export const transitions = {
-  soft: { duration: 0.55, ease: easeOutSoft },
+  soft: { duration: 0.7, ease: easeOutSoft },
   quick: { duration: 0.28, ease: easeOutSoft },
   spring: { type: "spring", stiffness: 380, damping: 32, mass: 0.8 },
 } satisfies Record<string, Transition>;
 
 /** Entrada estándar de bloques al hacer scroll. */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 6 },
   visible: { opacity: 1, y: 0, transition: transitions.soft },
 };
 

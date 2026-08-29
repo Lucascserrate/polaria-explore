@@ -2,144 +2,160 @@
 
 /* ---------------------------------------------------------------------------
    Polaria — design tokens
-   Marca: estrella polar. Base "noche" profunda + azul confiable + aurora sutil.
-   Deliberadamente NO usamos el verde de WhatsApp: la simulación debe evocar
-   una conversación, no clonar una marca de terceros.
+
+   La página es blanco, negro y gris. El color lo pone el producto: las citas de
+   la Agenda, el ámbar de "requiere tu atención", el verde de confirmado. Esa es
+   la regla que gobierna todo lo de abajo, y la razón por la que no existe una
+   escala de marca: si la marca tuviera un color propio competiría con el único
+   color que interesa, que es el de la interfaz real.
+
+   El acento —un celeste cercano a sky-500— tiene tres usos y ninguno más: el
+   halo del hero, el foco del teclado y el punto de "en vivo".
 --------------------------------------------------------------------------- */
 
 @theme {
-  /* Azul de marca — confiable, moderno, no el índigo por defecto */
-  --color-brand-50: #ecf4ff;
-  --color-brand-100: #d7e7ff;
-  --color-brand-200: #b4d2ff;
-  --color-brand-300: #82b4ff;
-  --color-brand-400: #4a8fff;
-  --color-brand-500: #1f6bff;
-  --color-brand-600: #0b50e8;
-  --color-brand-700: #0b3fba;
-  --color-brand-800: #103693;
-  --color-brand-900: #142f73;
-  --color-brand-950: #0e1d46;
+	/* Tinta — titulares, cuerpo y todo lo que se lee */
+	--color-ink-950: #0b0d10;
+	--color-ink-900: #14171c;
+	--color-ink-800: #22262e;
+	--color-ink-700: #3c424d;
+	--color-ink-600: #5a616e;
+	--color-ink-500: #838a97;
 
-  /* Tinta — fondos oscuros (hero, CTA final) */
-  --color-ink-950: #06080f;
-  --color-ink-900: #0a0e18;
-  --color-ink-800: #111726;
-  --color-ink-700: #1a2233;
-  --color-ink-600: #273147;
-  --color-ink-500: #3a4761;
+	/* Papel — blanco y los grises que lo separan */
+	--color-paper-50: #ffffff;
+	--color-paper-100: #fcfcfd;
+	--color-paper-200: #f5f6f8;
+	--color-paper-300: #e9ebef;
+	--color-paper-400: #d5d9e0;
 
-  /* Neutros cálidos — cuerpo de la página */
-  --color-paper-50: #ffffff;
-  --color-paper-100: #fafafa;
-  --color-paper-200: #f4f5f7;
-  --color-paper-300: #e8eaee;
-  --color-paper-400: #d4d8e0;
+	/* Acento — puntual. Nunca una superficie grande, nunca texto largo. */
+	--color-accent-200: #bae6fd;
+	--color-accent-400: #38bdf8;
+	--color-accent-500: #0ea5e9;
+	--color-accent-600: #0284c7;
 
-  /* Aurora — sólo para destellos y degradados, nunca para texto */
-  --color-aurora-violet: #8b5cf6;
-  --color-aurora-cyan: #22d3ee;
+	/*
+	 * Compatibilidad transitoria.
+	 *
+	 * Las secciones viejas todavía piden `brand-*`. En vez de romperlas, los
+	 * nombres viejos apuntan a la paleta nueva: la página entera deja de ser azul
+	 * sin reescribir una sola sección. Estos alias se borran en el último paso,
+	 * cuando ya no queden usos.
+	 */
+	--color-brand-50: var(--color-paper-200);
+	--color-brand-100: var(--color-paper-300);
+	--color-brand-200: var(--color-accent-200);
+	--color-brand-300: var(--color-paper-400);
+	--color-brand-400: var(--color-accent-400);
+	--color-brand-500: var(--color-accent-500);
+	--color-brand-600: var(--color-ink-700);
+	--color-brand-700: var(--color-ink-900);
+	--color-brand-900: var(--color-ink-950);
 
-  /* Ámbar — "requiere tu atención" (derivación a humano) */
-  --color-attention-50: #fffbeb;
-  --color-attention-100: #fef3c7;
-  --color-attention-400: #fbbf24;
-  --color-attention-500: #f59e0b;
-  --color-attention-700: #b45309;
+	/* Ámbar — "requiere tu atención". Vive dentro de la interfaz del producto. */
+	--color-attention-50: #fffbeb;
+	--color-attention-100: #fef3c7;
+	--color-attention-400: #fbbf24;
+	--color-attention-500: #f59e0b;
+	--color-attention-700: #b45309;
 
-  /* Verde sobrio — confirmaciones en la agenda. Tono desaturado a propósito
-     para no leerse como el verde de WhatsApp. */
-  --color-confirm-50: #ecfdf5;
-  --color-confirm-100: #d1fae5;
-  --color-confirm-500: #10b981;
-  --color-confirm-600: #059669;
-  --color-confirm-700: #047857;
+	/* Verde — confirmado en la agenda. También del producto, no de la marca. */
+	--color-confirm-50: #ecfdf5;
+	--color-confirm-100: #d1fae5;
+	--color-confirm-500: #10b981;
+	--color-confirm-600: #059669;
+	--color-confirm-700: #047857;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+	/*
+	 * Una sola familia en todo el sitio.
+	 *
+	 * Es la decisión tipográfica de la página: el contraste lo dan el tamaño y el
+	 * peso, no la mezcla de familias. `--font-mono` apunta a la misma pila a
+	 * propósito — las horas y los precios se alinean con `tabular-nums`, que es lo
+	 * que hacía falta de una monoespaciada, sin traer una segunda descarga.
+	 */
+	--font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+	--font-mono: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
 
-  /* Curvas compartidas — cualquier animación CSS usa estas */
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+	/* Ritmo vertical de las secciones. Más aire del que parece necesario. */
+	--spacing-section: 8rem;
+	--spacing-section-lg: 11rem;
 
-  --animate-bubble-in: bubble-in 0.42s var(--ease-out-soft) both;
-  --animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
-  --animate-slot-fill: slot-fill 0.7s var(--ease-out-soft) both;
-  --animate-pick-pop: pick-pop 0.5s var(--ease-out-soft) both;
-  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
-  --animate-aurora: aurora 18s ease-in-out infinite;
+	/* Curvas compartidas — cualquier animación CSS usa estas */
+	--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+
+	--animate-bubble-in: bubble-in 0.42s var(--ease-out-soft) both;
+	--animate-reveal-in: reveal-in 0.7s var(--ease-out-soft) backwards;
+	--animate-typing-dot: typing-dot 1.2s ease-in-out infinite;
+	--animate-slot-fill: slot-fill 0.7s var(--ease-out-soft) both;
+	--animate-pick-pop: pick-pop 0.5s var(--ease-out-soft) both;
+}
+
+/*
+ * Entrada de los bloques.
+ *
+ * `backwards` y no `both`: el estado base del elemento es visible, y la opacidad
+ * cero sólo existe mientras la animación está por delante. Si las animaciones no
+ * corren —CSS bloqueado, un motor viejo, una captura headless— el contenido se ve
+ * igual. La versión anterior lo escondía con JavaScript y lo revelaba al entrar
+ * en pantalla, así que cualquier falla del observador dejaba la página en blanco
+ * con el texto presente en el DOM.
+ */
+@keyframes reveal-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
 }
 
 @keyframes bubble-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }
 
 @keyframes typing-dot {
-  0%,
-  60%,
-  100% {
-    opacity: 0.25;
-    transform: translateY(0);
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-3px);
-  }
+	0%,
+	60%,
+	100% {
+		opacity: 0.25;
+		transform: translateY(0);
+	}
+	30% {
+		opacity: 1;
+		transform: translateY(-3px);
+	}
 }
 
 @keyframes slot-fill {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+	from {
+		opacity: 0;
+		transform: scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 /* La opción elegida "se hunde" un instante, como si alguien la tocara. */
 @keyframes pick-pop {
-  0% {
-    transform: scale(1);
-  }
-  35% {
-    transform: scale(0.965);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    opacity: 0.55;
-    transform: scale(0.9);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(1.7);
-  }
-}
-
-@keyframes aurora {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.55;
-  }
-  50% {
-    transform: translate3d(3%, -4%, 0) scale(1.12);
-    opacity: 0.8;
-  }
+	0% {
+		transform: scale(1);
+	}
+	35% {
+		transform: scale(0.965);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 /* ---------------------------------------------------------------------------
@@ -147,31 +163,46 @@
 --------------------------------------------------------------------------- */
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    /* Next 16 ya no sobreescribe scroll-behavior en navegación salvo que se
-       declare explícitamente con este atributo (ver layout.tsx). */
-    -webkit-tap-highlight-color: transparent;
-  }
+	html {
+		scroll-behavior: smooth;
+		/* Next 16 ya no sobreescribe scroll-behavior en navegación salvo que se
+		   declare explícitamente con este atributo (ver layout.tsx). */
+		-webkit-tap-highlight-color: transparent;
+	}
 
-  body {
-    background-color: var(--color-paper-50);
-    color: var(--color-ink-900);
-    font-family: var(--font-sans);
-    text-rendering: optimizeLegibility;
-  }
+	body {
+		background-color: var(--color-paper-50);
+		color: var(--color-ink-900);
+		font-family: var(--font-sans);
+		text-rendering: optimizeLegibility;
+	}
 
-  /* Foco visible y consistente en toda la página. */
-  :focus-visible {
-    outline: 2px solid var(--color-brand-500);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+	/*
+	 * Los titulares van apretados; el cuerpo, no.
+	 *
+	 * A tamaños grandes el espaciado por defecto de la fuente deja huecos que se
+	 * leen como descuido, y cerrarlos es la mitad del efecto de las referencias.
+	 */
+	h1,
+	h2 {
+		letter-spacing: -0.035em;
+		text-wrap: balance;
+	}
 
-  ::selection {
-    background-color: var(--color-brand-200);
-    color: var(--color-ink-900);
-  }
+	h3 {
+		letter-spacing: -0.02em;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-accent-500);
+		outline-offset: 2px;
+		border-radius: 4px;
+	}
+
+	::selection {
+		background-color: var(--color-accent-200);
+		color: var(--color-ink-950);
+	}
 }
 
 /* ---------------------------------------------------------------------------
@@ -181,51 +212,40 @@
 /* Sólo visible para lectores de pantalla. La usamos para anunciar cambios de
    agenda mientras la conversación avanza. */
 @utility sr-only-live {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
 }
 
-/* Texto con degradado aurora — reservado para una o dos palabras del hero. */
-@utility text-aurora {
-  background-image: linear-gradient(
-    100deg,
-    var(--color-brand-300) 0%,
-    var(--color-aurora-cyan) 45%,
-    var(--color-aurora-violet) 100%
-  );
-  background-clip: text;
-  color: transparent;
-}
-
-/* Borde de 1px con degradado, sin pseudo-elementos frágiles. */
-@utility ring-hairline {
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
-}
-
-/* Malla de líneas muy tenue para las superficies claras. Es el equivalente
-   diurno de bg-starfield: da textura al hero sin competir con el producto. */
-@utility bg-mesh {
-  background-image:
-    linear-gradient(to right, rgb(6 8 15 / 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(6 8 15 / 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+/*
+ * El halo del acento.
+ *
+ * Es el único lugar donde el celeste ocupa superficie, y funciona porque no
+ * tiene borde: se escapa por atrás de la interfaz, como en las referencias.
+ * Difuminado y a baja opacidad; si se nota como "un círculo", está mal usado.
+ */
+@utility glow-accent {
+	background-image: radial-gradient(
+		closest-side,
+		rgb(14 165 233 / 0.16),
+		transparent
+	);
 }
 
 /* Malla de puntos muy tenue para las superficies oscuras. */
 @utility bg-starfield {
-  background-image: radial-gradient(
-    circle at center,
-    rgb(255 255 255 / 0.14) 1px,
-    transparent 1px
-  );
-  background-size: 32px 32px;
+	background-image: radial-gradient(
+		circle at center,
+		rgb(255 255 255 / 0.1) 1px,
+		transparent 1px
+	);
+	background-size: 32px 32px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -235,16 +255,16 @@
 --------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+	html {
+		scroll-behavior: auto;
+	}
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }

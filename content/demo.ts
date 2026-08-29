@@ -9,5 +9,5 @@ export const demo = {
   eyebrow: "Probala",
   title: "Reservá una cita vos mismo",
   description:
-    "Servicio, profesional y horario en cuatro toques. Fijate cómo cambian los horarios según el profesional y cómo la agenda de la derecha se llena sola. También podés escribirle lo que se te ocurra.",
+    "Servicio, profesional y horario en cuatro toques. Fijate cómo cambian los horarios según el profesional y cómo la agenda de la derecha se llena sola.",
 } as const;
