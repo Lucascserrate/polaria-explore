@@ -90,9 +90,16 @@ export function fetchStaticMap(location: {
 		`/${WIDTH}x${HEIGHT}@2x?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
 
 	/*
-	 * El logo de Mapbox y la atribución de OpenStreetMap van dentro de la imagen.
-	 * `logo=false` y `attribution=false` existen, pero sólo se pueden usar
-	 * mostrando la atribución en otro lado, y esta página no tiene dónde.
+	 * `logo=false&attribution=false` no saca la atribución: la mueve. Adentro del
+	 * PNG quedaba pegada sobre el mapa, en un cuerpo que no es el de la página y
+	 * sin forma de darle estilo.
+	 *
+	 * `LocationPanel` la escribe debajo del mapa como texto con sus enlaces, desde
+	 * `booking.location.credits`. Mapbox pide que la atribución esté; no pide que
+	 * esté quemada en la imagen. **Si ese texto se borra, estos dos parámetros
+	 * vuelven a `true`.**
 	 */
-	return fetch(url, { next: { revalidate: STATIC_MAP_CACHE_SECONDS } });
+	return fetch(`${url}&logo=false&attribution=false`, {
+		next: { revalidate: STATIC_MAP_CACHE_SECONDS },
+	});
 }

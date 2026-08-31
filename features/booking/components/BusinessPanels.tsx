@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import { booking, dayNames, weekOrder } from '@/content/booking';
 import { cn } from '@/lib/utils';
-import { Storefront } from '@/components/ui/icons';
 import { hasStaticMap } from '@/services/map/static-map';
 import { currentDayOfWeek, trimSeconds } from '../format';
 import { directionsUrl } from '../location';
@@ -9,6 +8,7 @@ import type {
 	PublicBusinessProfile,
 	WeeklyRange,
 } from '@/services/booking/types';
+import MapMarker from './MapMarker';
 
 /**
  * Lo que se consulta después de haber decidido reservar: horarios y dirección.
@@ -116,22 +116,7 @@ export function LocationPanel({ profile }: { profile: PublicBusinessProfile }) {
 							className="w-full"
 						/>
 
-						{/*
-						 * El marcador puede estar clavado al centro porque la imagen es un
-						 * mapa centrado en el negocio: el centro del contenedor **es** la
-						 * coordenada. En el DOM y no dentro de la imagen para que sea
-						 * nuestro icono y no una gota del catálogo de Mapbox, y para que
-						 * quede nítido en cualquier pantalla.
-						 *
-						 * El anillo blanco lo despega del mapa sin una sombra: sobre calles
-						 * y plazas, un círculo negro a secas se confunde con una manzana.
-						 */}
-						<span
-							aria-hidden="true"
-							className="pointer-events-none absolute top-1/2 left-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink-950 text-paper-50 ring-2 ring-paper-50"
-						>
-							<Storefront className="h-5 w-5" />
-						</span>
+						<MapMarker />
 					</a>
 				)}
 
@@ -147,6 +132,23 @@ export function LocationPanel({ profile }: { profile: PublicBusinessProfile }) {
 						>
 							{booking.location.directions}
 						</a>
+					)}
+
+					{/* Obligatoria. Ver `booking.location.credits`. */}
+					{map && (
+						<p className="flex gap-3 text-xs text-ink-500">
+							{booking.location.credits.map((credit) => (
+								<a
+									key={credit.href}
+									href={credit.href}
+									target="_blank"
+									rel="noreferrer"
+									className="underline-offset-4 hover:underline"
+								>
+									{credit.label}
+								</a>
+							))}
+						</p>
 					)}
 				</div>
 			</div>
