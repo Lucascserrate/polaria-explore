@@ -9,6 +9,7 @@ import {
 } from '@/features/booking/components/BookButton';
 import { BookingProvider } from '@/features/booking/components/BookingProvider';
 import { BookingSidebar } from '@/features/booking/components/BookingSidebar';
+import { BusinessHeader } from '@/features/booking/components/BusinessHeader';
 import {
 	LocationPanel,
 	SchedulePanel,
@@ -61,7 +62,7 @@ export default async function BusinessBookingPage({ params }: Props) {
 		<BookingProvider profile={profile}>
 			<main className="pb-10">
 				<Container className="max-w-6xl py-6 sm:py-10">
-					{/* <BusinessHeader profile={profile} /> */}
+					<BusinessHeader profile={profile} />
 
 					<div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
 						<div className="space-y-12">
