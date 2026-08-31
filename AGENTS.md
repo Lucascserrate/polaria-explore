@@ -41,10 +41,16 @@ node scripts/capture.mjs   # capturas del panel real (ver abajo)
 
 ```bash
 POLARIA_API_URL=http://localhost:3001   # API de Polaria (server-side, sin NEXT_PUBLIC_)
+MAPBOX_TOKEN=pk....                     # opcional: el mapa de "Dónde estamos"
+MAPBOX_STYLE=mapbox://styles/mapbox/light-v11   # opcional, ése es el valor por defecto
 ```
 
-Sin `NEXT_PUBLIC_` a propósito: el navegador nunca llama a la API. Ver
-`config/api.ts`.
+Sin `NEXT_PUBLIC_` a propósito: el navegador nunca llama a la API ni a Mapbox.
+Ver `config/api.ts` y `config/map.ts`.
+
+Sin `MAPBOX_TOKEN` no hay mapa y la sección "Dónde estamos" queda con la
+dirección y el enlace, que es como estaba. **No es un error que haya que
+arreglar para levantar el sitio**, y en desarrollo se puede trabajar sin él.
 
 ## Dirección visual (lo que sostiene la landing nueva)
 
@@ -145,6 +151,13 @@ services/booking/
   WhatsApp y el panel. Si aparece un cálculo de horarios en este repo, está mal.
 - **Sin fotos, y sin huecos de fotos.** `BusinessCover` es el lugar reservado
   para cuando existan; hoy es una banda neutra.
+- **El mapa de "Dónde estamos" es una imagen, no un mapa arrastrable.** Sale de
+  la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`), en el
+  estilo `light-v11` para que no meta color, y la pide el servidor en
+  `app/api/map/[slug]`. Dos razones: cero JavaScript en una página que se abre
+  con datos móviles, y la clave de Mapbox no viaja al navegador. **Ese handler
+  recibe un slug, nunca coordenadas** — con coordenadas sería un proxy abierto
+  contra una cuenta que se factura por petición.
 - Los pasos del flujo son los mismos que los de la reserva guiada de WhatsApp
   —servicio → profesional → fecha y hora → datos— porque son los datos que el
   backend necesita, en el orden en que dejan de ser ambiguos.

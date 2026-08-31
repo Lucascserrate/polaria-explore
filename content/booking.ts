@@ -54,6 +54,14 @@ export const booking = {
   location: {
     title: "Dónde estamos",
     directions: "Cómo llegar",
+    /**
+     * El texto alternativo del mapa.
+     *
+     * Nombra el negocio y no "mapa de la zona": a quien lo escucha en un lector
+     * de pantalla no le sirve saber que hay una imagen, y la dirección escrita
+     * —que es el dato— está justo debajo.
+     */
+    mapAlt: (name: string) => `Ubicación de ${name} en el mapa`,
     /** Sin dirección cargada no hay sección: un título vacío es peor que nada. */
   },
 

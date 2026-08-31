@@ -3,11 +3,12 @@ import type { PublicBusinessProfile } from "@/services/booking/types";
 /**
  * El enlace de "Cómo llegar".
  *
- * No se dibuja un mapa: hacerlo pediría una biblioteca, una clave de un
- * proveedor y unos cientos de kilobytes en la primera pantalla de una página
- * que se abre desde un teléfono con datos móviles. El botón manda a la
- * aplicación de mapas que la persona ya tiene abierta y usa todos los días, que
- * además sabe llegar desde donde está parada.
+ * Sigue siendo el que resuelve el problema, incluso ahora que la sección
+ * muestra un mapa: llegar es cosa de la aplicación que la persona ya tiene
+ * abierta, que sabe salir desde donde está parada. Lo que se dibuja arriba es
+ * una imagen —ver `services/map/static-map.ts`—, y por eso no volvió el costo
+ * que este comentario descartaba: no hay biblioteca de mapas ni cientos de
+ * kilobytes de JavaScript en una página que se abre con datos móviles.
  *
  * Las coordenadas ganan sobre el texto cuando están: una dirección escrita a
  * mano puede llevar a la cuadra equivocada, un par de coordenadas no.
