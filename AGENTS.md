@@ -42,7 +42,7 @@ node scripts/capture.mjs   # capturas del panel real (ver abajo)
 ```bash
 POLARIA_API_URL=http://localhost:3001   # API de Polaria (server-side, sin NEXT_PUBLIC_)
 MAPBOX_TOKEN=pk....                     # opcional: el mapa de "Dónde estamos"
-MAPBOX_STYLE=mapbox://styles/mapbox/light-v11   # opcional, ése es el valor por defecto
+MAPBOX_STYLE=mapbox://styles/mapbox/streets-v11 # opcional, ése es el valor por defecto
 ```
 
 Sin `NEXT_PUBLIC_` a propósito: el navegador nunca llama a la API ni a Mapbox.
@@ -152,12 +152,24 @@ services/booking/
 - **Sin fotos, y sin huecos de fotos.** `BusinessCover` es el lugar reservado
   para cuando existan; hoy es una banda neutra.
 - **El mapa de "Dónde estamos" es una imagen, no un mapa arrastrable.** Sale de
-  la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`), en el
-  estilo `light-v11` para que no meta color, y la pide el servidor en
-  `app/api/map/[slug]`. Dos razones: cero JavaScript en una página que se abre
-  con datos móviles, y la clave de Mapbox no viaja al navegador. **Ese handler
-  recibe un slug, nunca coordenadas** — con coordenadas sería un proxy abierto
-  contra una cuenta que se factura por petición.
+  la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`) y la pide
+  el servidor en `app/api/map/[slug]`. Dos razones: cero JavaScript en una página
+  que se abre con datos móviles, y la clave de Mapbox no viaja al navegador.
+  **Ese handler recibe un slug, nunca coordenadas** — con coordenadas sería un
+  proxy abierto contra una cuenta que se factura por petición.
+- **El mapa es la única parte de la página con color, y es a propósito.** Un mapa
+  de calles se lee por el color —el verde es una plaza, el azul es el río— y en
+  gris hay que leer los nombres para orientarse. Nadie lo confunde con color de
+  marca. Va a zoom de barrio y no de cuadra: el número de la puerta lo dice la
+  dirección escrita debajo.
+- **El marcador lo dibuja el DOM, no Mapbox** (`LocationPanel`). Puede ir clavado
+  al centro porque la imagen es un mapa centrado en el negocio. Los marcadores de
+  Mapbox son gotas de un catálogo fijo; éste es un círculo negro con el icono
+  `Storefront`.
+- **Ojo con `MAPBOX_STYLE`:** la API de imágenes estáticas **no** dibuja los
+  estilos armados sobre el basemap "Standard" de Mapbox. Devuelve una imagen en
+  blanco, sin error. Ahí caen los que salen hoy de Mapbox Studio, incluido el del
+  panel. Si se cambia el estilo, hay que mirar la imagen.
 - Los pasos del flujo son los mismos que los de la reserva guiada de WhatsApp
   —servicio → profesional → fecha y hora → datos— porque son los datos que el
   backend necesita, en el orden en que dejan de ser ambiguos.

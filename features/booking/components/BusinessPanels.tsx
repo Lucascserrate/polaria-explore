@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { booking, dayNames, weekOrder } from '@/content/booking';
 import { cn } from '@/lib/utils';
+import { Storefront } from '@/components/ui/icons';
 import { hasStaticMap } from '@/services/map/static-map';
 import { currentDayOfWeek, trimSeconds } from '../format';
 import { directionsUrl } from '../location';
@@ -104,16 +105,33 @@ export function LocationPanel({ profile }: { profile: PublicBusinessProfile }) {
 						href={directions}
 						target="_blank"
 						rel="noreferrer"
-						className="block border-b border-paper-300"
+						className="relative block border-b border-paper-300"
 					>
 						<Image
 							src={`/api/map/${encodeURIComponent(profile.slug)}`}
 							alt={booking.location.mapAlt(profile.name)}
 							width={1280}
-							height={520}
+							height={640}
 							sizes="(min-width: 1024px) 40rem, 100vw"
 							className="w-full"
 						/>
+
+						{/*
+						 * El marcador puede estar clavado al centro porque la imagen es un
+						 * mapa centrado en el negocio: el centro del contenedor **es** la
+						 * coordenada. En el DOM y no dentro de la imagen para que sea
+						 * nuestro icono y no una gota del catálogo de Mapbox, y para que
+						 * quede nítido en cualquier pantalla.
+						 *
+						 * El anillo blanco lo despega del mapa sin una sombra: sobre calles
+						 * y plazas, un círculo negro a secas se confunde con una manzana.
+						 */}
+						<span
+							aria-hidden="true"
+							className="pointer-events-none absolute top-1/2 left-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink-950 text-paper-50 ring-2 ring-paper-50"
+						>
+							<Storefront className="h-5 w-5" />
+						</span>
 					</a>
 				)}
 

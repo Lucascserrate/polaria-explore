@@ -1,10 +1,10 @@
-import "server-only";
+import 'server-only';
 
 import {
-  MAPBOX_STYLE,
-  MAPBOX_TOKEN,
-  STATIC_MAP_CACHE_SECONDS,
-} from "@/config/map";
+	MAPBOX_STYLE,
+	MAPBOX_TOKEN,
+	STATIC_MAP_CACHE_SECONDS,
+} from '@/config/map';
 
 /**
  * Servicio: la imagen del mapa de un negocio.
@@ -22,25 +22,21 @@ import {
  * resuelve el enlace que la envuelve.
  */
 
-const STATIC_API = "https://api.mapbox.com/styles/v1";
+const STATIC_API = 'https://api.mapbox.com/styles/v1';
 
 /*
- * 640×260 a 2x.
+ * 640×320 a 2x.
  *
- * Una banda baja y ancha: en un teléfono, un mapa cuadrado empuja la dirección
- * y el "Cómo llegar" fuera de la pantalla, y son esos dos los que sirven para
- * algo. El 2x no es lujo —el nombre de las calles a 1x se ve sucio en cualquier
+ * Una banda ancha: en un teléfono, un mapa cuadrado empuja la dirección y el
+ * "Cómo llegar" fuera de la pantalla, y son esos dos los que sirven para algo.
+ * El 2x no es lujo —el nombre de las calles a 1x se ve sucio en cualquier
  * teléfono de los últimos diez años— y son los 1280px que la API permite como
  * máximo.
  */
 const WIDTH = 640;
-const HEIGHT = 260;
+const HEIGHT = 320;
 
-/** Se ve la cuadra y las calles que la cruzan, que es lo que ubica a alguien. */
-const ZOOM = 15;
-
-/** `ink-950`: el pin es el dato, y la única marca sobre un mapa gris. */
-const PIN = "pin-s+0a0a0a";
+const ZOOM = 13;
 
 /**
  * El estilo en la forma que pide la API de imágenes estáticas: `usuario/id`.
@@ -56,14 +52,14 @@ const PIN = "pin-s+0a0a0a";
  * estilo que no se entiende se descarta y el mapa no se dibuja, que se ve.
  */
 export function staticStylePath(style: string): string | null {
-  const value = style.trim().replace(/^mapbox:\/\/styles\//, "");
+	const value = style.trim().replace(/^mapbox:\/\/styles\//, '');
 
-  return /^[\w-]+\/[\w-]+$/.test(value) ? value : null;
+	return /^[\w-]+\/[\w-]+$/.test(value) ? value : null;
 }
 
 /** Si este entorno puede dibujar mapas. Sin esto, la sección va sin imagen. */
 export function hasStaticMap(): boolean {
-  return Boolean(MAPBOX_TOKEN) && staticStylePath(MAPBOX_STYLE) !== null;
+	return Boolean(MAPBOX_TOKEN) && staticStylePath(MAPBOX_STYLE) !== null;
 }
 
 /**
@@ -74,29 +70,29 @@ export function hasStaticMap(): boolean {
  * vacía escondería una clave vencida durante meses.
  */
 export function fetchStaticMap(location: {
-  latitude: number;
-  longitude: number;
+	latitude: number;
+	longitude: number;
 }): Promise<Response> {
-  const style = staticStylePath(MAPBOX_STYLE);
+	const style = staticStylePath(MAPBOX_STYLE);
 
-  if (!style) {
-    throw new Error(
-      `MAPBOX_STYLE no es un estilo de Mapbox: ${MAPBOX_STYLE}. ` +
-        'Se espera "mapbox://styles/usuario/id" o "usuario/id".',
-    );
-  }
+	if (!style) {
+		throw new Error(
+			`MAPBOX_STYLE no es un estilo de Mapbox: ${MAPBOX_STYLE}. ` +
+				'Se espera "mapbox://styles/usuario/id" o "usuario/id".',
+		);
+	}
 
-  // Longitud primero: es el orden de la API de Mapbox, y al revés cae en el mar.
-  const center = `${location.longitude},${location.latitude}`;
+	// Longitud primero: es el orden de la API de Mapbox, y al revés cae en el mar.
+	const center = `${location.longitude},${location.latitude}`;
 
-  const url =
-    `${STATIC_API}/${style}/static/${PIN}(${center})/${center},${ZOOM},0` +
-    `/${WIDTH}x${HEIGHT}@2x?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
+	const url =
+		`${STATIC_API}/${style}/static/${center},${ZOOM},0` +
+		`/${WIDTH}x${HEIGHT}@2x?access_token=${encodeURIComponent(MAPBOX_TOKEN)}`;
 
-  /*
-   * El logo de Mapbox y la atribución de OpenStreetMap van dentro de la imagen.
-   * `logo=false` y `attribution=false` existen, pero sólo se pueden usar
-   * mostrando la atribución en otro lado, y esta página no tiene dónde.
-   */
-  return fetch(url, { next: { revalidate: STATIC_MAP_CACHE_SECONDS } });
+	/*
+	 * El logo de Mapbox y la atribución de OpenStreetMap van dentro de la imagen.
+	 * `logo=false` y `attribution=false` existen, pero sólo se pueden usar
+	 * mostrando la atribución en otro lado, y esta página no tiene dónde.
+	 */
+	return fetch(url, { next: { revalidate: STATIC_MAP_CACHE_SECONDS } });
 }
