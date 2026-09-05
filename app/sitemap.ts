@@ -1,11 +1,16 @@
-import type { MetadataRoute } from "next";
-import { site } from "@/config/site";
+import type { MetadataRoute } from 'next';
+import { site } from '@/config/site';
 
+/**
+ * Por ahora, sólo la raíz.
+ *
+ * Las páginas de reserva no se listan a mano: cuando exista el buscador del
+ * marketplace, éste es el lugar donde hay que pedirle a la API la lista de
+ * negocios publicados y mapearla. Hasta entonces cada negocio reparte su URL.
+ *
+ * /privacy y /terms se fueron con la landing, a su propio dominio y su propio
+ * sitemap.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    // Las páginas públicas de reserva no van al sitemap: son de cada negocio.
-    { url: site.url, changeFrequency: "weekly", priority: 1 },
-    { url: `${site.url}/privacy`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${site.url}/terms`, changeFrequency: "yearly", priority: 0.3 },
-  ];
+	return [{ url: site.url, changeFrequency: 'daily', priority: 1 }];
 }

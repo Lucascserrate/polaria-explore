@@ -23,15 +23,15 @@ const instrumentSans = Instrument_Sans({
 /**
  * El layout raíz sólo arma el documento: fuente, estilos y `<body>`.
  *
- * El encabezado y el pie **ya no están acá**, y ésa es la separación que
- * sostiene que dos sitios distintos convivan en el mismo dominio.
- * `app/(marketing)` es la landing de Polaria, con su navegación y su pie;
- * `app/(booking)` son las páginas públicas de cada negocio, donde una barra que
- * dice "Probá Polaria gratis" sería publicidad de un tercero encima de la
- * reserva del cliente.
+ * El encabezado y el pie no están acá: los trae `app/(booking)`, que es el
+ * único grupo de rutas que hay por ahora. La landing —con su navegación, su
+ * pie y sus páginas legales— se fue al repositorio `polaria-landing`, así que
+ * en este dominio no hay nada que le hable al dueño del negocio: el visitante
+ * es su cliente, y una barra que diga "Probá Polaria gratis" sería publicidad
+ * de un tercero encima de la reserva.
  *
- * Lo que se agregue acá lo hereda todo el dominio. Antes de tocarlo: ¿esto es
- * del documento, o es de la landing?
+ * Lo que se agregue acá lo hereda todo el dominio, incluido el buscador del
+ * marketplace cuando exista. Antes de tocarlo: ¿esto es del documento?
  */
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),

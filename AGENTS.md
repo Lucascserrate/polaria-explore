@@ -1,32 +1,23 @@
-<!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
 
-# Polaria — sitio
+# Polaria — explore
 
 Polaria es un asistente de WhatsApp para negocios que trabajan con citas. Este
-repositorio es el sitio público: **la landing**, **las páginas de reserva de
-cada negocio** (`polariahq.com/royal-barber`) y **las dos páginas legales** que
-Meta revisa para aprobar WhatsApp Business API.
+repositorio es el sitio público de **los negocios**: hoy, **la página de reserva
+de cada uno** (`polariahq.com/royal-barber`); mañana, el **marketplace** donde se
+los busca, se los lista y se los ve en un mapa.
 
-## Estado de la landing
+**La landing no está acá.** Se fue al repositorio `polaria-landing`, junto con
+las dos páginas legales (`/privacy`, `/terms`) que Meta revisa para aprobar
+WhatsApp Business API. Ésa es la separación que hay que entender antes de tocar
+nada: en este dominio el visitante es **el cliente del negocio**, no el dueño, y
+no hay nada que venderle. Si estás por escribir copy que le habla a un negocio
+sobre software, estás en el repositorio equivocado.
 
-La landing se rehízo desde cero. La anterior —hero animado, simulador de
-conversación, calculadora— se borró completa; está commiteada en la rama
-`landing-vieja` (commit `235efbd`) por si hace falta rescatar una pieza:
-`git checkout landing-vieja -- <ruta>`.
-
-Lo que hay ahora es **la primera versión estructural**: estructura, ritmo y
-dirección visual resueltos; copy provisional. Antes de pulir una sección hay que
-tener aprobada la dirección, no al revés.
-
-- **El copy de la landing es un borrador y vive junto en `content/landing.ts`.**
-  Cuando se trabaje en serio se parte en un archivo por sección, como el resto
-  del proyecto.
-- **Nada de cifras de tracción inventadas.** Todavía no hay clientes y éste es
-  el sitio que Meta revisa.
+Lo único que queda de Polaria en este sitio es la firma al pie de la reserva,
+que enlaza a la landing (`site.landingUrl`).
 
 ## Comandos
 
@@ -34,7 +25,6 @@ tener aprobada la dirección, no al revés.
 npm run dev            # desarrollo
 npm run check          # typecheck + lint
 npm run build
-node scripts/capture.mjs   # capturas del panel real (ver abajo)
 ```
 
 ## Variables de entorno
@@ -52,60 +42,26 @@ Sin `MAPBOX_TOKEN` no hay mapa y la sección "Dónde estamos" queda con la
 dirección y el enlace, que es como estaba. **No es un error que haya que
 arreglar para levantar el sitio**, y en desarrollo se puede trabajar sin él.
 
-## Dirección visual (lo que sostiene la landing nueva)
-
-La referencia es Fresha: composición amplia, titulares enormes contra cuerpo
-tranquilo, pocas cosas por sección y el producto mostrado en pantallas reales.
-Lo que **no** se toma de la referencia es el color.
-
-- **Negro, blanco y dos grises.** No hay color de marca. El único color de la
-  página entra por las capturas del panel, que ya es blanco y negro.
-- **El gris es jerarquía, no superficie.** Aparece en texto secundario, en
-  líneas de 1px y en una sola banda de fondo (`Section tone="soft"`). Si algo se
-  ve apagado, casi siempre es un gris que debería haber sido negro.
-- **El negro aparece dos veces:** las cifras bajo el hero y el cierre. Usarlo en
-  más lugares lo convierte en un fondo más.
-- **Sin tarjetas, sin sombras, sin gradientes, sin iconos decorativos.** La
-  estructura la dan el espacio y las líneas de 1px. Un bloque que necesita un
-  borde para leerse suele estar mal espaciado.
-- **Una sola animación:** opacidad y ocho píxeles al entrar en pantalla
-  (`<Reveal>`). El estado escondido depende de la clase `js` que pone un script
-  inline en `app/layout.tsx`: sin JavaScript la página se ve completa y quieta,
-  nunca en blanco.
-- **Ritmo vertical centralizado en `<Section>`.** Si una sección necesita otro
-  aire, se cambia ahí, no con márgenes sueltos.
-
-## Capturas de producto
-
-Las imágenes de `public/product/` salen del panel real con
-`scripts/capture.mjs` (necesita `polaria/client` corriendo con
-`NEXT_PUBLIC_DEMO_DATA=1`). Los archivos `*-detalle.png` son recortes de esas
-tomas encuadrados a la zona con información: el panel es una interfaz aireada y
-la pantalla entera, a media columna, se lee como una mancha gris.
-
-**Falta la captura de la agenda**, que es la mejor imagen posible para el hero
-—es la pantalla que resume el producto—. Hoy el hero usa Analíticas.
-
 ## Mapa de rutas
 
-`app/` está partido en grupos que no comparten nada más que el documento
-(`app/layout.tsx`: fuente, estilos, `<body>` y el script de la clase `js`):
+| Ruta               | Estado      | Quién la lee                     |
+| ------------------ | ----------- | -------------------------------- |
+| `/`                | provisional | Un cartel. Va a ser el buscador. |
+| `/[businessSlug]`  | en pie      | **El cliente de ese negocio**    |
+| `/api/booking/...` | en pie      | Nadie: pasamanos hacia la API    |
+| `/api/map/[slug]`  | en pie      | Nadie: la imagen del mapa        |
 
-| Grupo             | Rutas                | Quién la lee                  |
-| ----------------- | -------------------- | ----------------------------- |
-| `app/(marketing)` | `/`                  | Un negocio evaluando Polaria  |
-| `app/(booking)`   | `/[businessSlug]`    | **El cliente de ese negocio** |
-| `app/(legal)`     | `/privacy`, `/terms` | Meta, y quien busque el aviso |
+`app/page.tsx` es un cartel provisional, no una landing: existe para que la raíz
+del dominio no sea un 404 —las páginas de reserva cuelgan de ella y alguien va a
+borrar el slug de la barra de direcciones para ver qué hay más arriba—. El copy
+está en `content/home.ts` y se reemplaza entero cuando llegue el buscador.
 
-La navegación y el pie de la landing viven en `app/(marketing)/layout.tsx` y no
-en el layout raíz. No es orden por orden: en una página de reserva, una barra
-que diga "Probá Polaria gratis" es publicidad de un tercero metida en el local
-de otro, y el enlace más visible llevaría fuera de la página justo cuando lo
-único que hay que hacer es tocar "Reservar".
-
-Las rutas estáticas ganan sobre `[businessSlug]`, así que `/privacy` sigue
-siendo la política de privacidad. Esos nombres están reservados del lado del
-backend (`RESERVED_SLUGS`) para que ningún negocio quede en una URL inalcanzable.
+**Los negocios van en la raíz** (`/royal-barber`, no `/n/royal-barber`), así que
+los nombres que use el sitio siguen estando reservados del lado del backend
+(`RESERVED_SLUGS`) para que ningún negocio quede en una URL inalcanzable. La
+lista se achicó al irse la landing: ya no hay que reservar `/privacy` ni
+`/terms`. Cada ruta estática nueva que se agregue acá es un slug menos
+disponible; vale la pena pensarlo antes.
 
 ## Datos: `services/` y React Query
 
@@ -140,17 +96,16 @@ services/booking/
 - **Una clave por consulta reemplaza al `AbortController`.** El riesgo de que la
   respuesta de un día pise la de otro no se resuelve: deja de existir.
 - **El `QueryClientProvider` sólo envuelve `app/(booking)`**
-  (`components/providers/query-provider.tsx`). La landing no pide nada.
+  (`components/providers/query-provider.tsx`).
 
 ## La página de reservas
 
-- **`features/booking/` es la interfaz, no los datos.** No importa nada de
-  `sections/`, y sus peticiones salen de `services/booking/hooks/`.
+- **`features/booking/` es la interfaz, no los datos.** Sus peticiones salen de
+  `services/booking/hooks/`.
 - **No hay lógica de reservas acá.** Disponibilidad, asignación de profesional y
   creación de la cita las resuelve la API de Polaria, que es la misma que atiende
   WhatsApp y el panel. Si aparece un cálculo de horarios en este repo, está mal.
-- **Sin fotos, y sin huecos de fotos.** `BusinessCover` es el lugar reservado
-  para cuando existan; hoy es una banda neutra.
+- **Sin fotos, y sin huecos de fotos.**
 - **El mapa de "Dónde estamos" es una imagen, no un mapa arrastrable.** Sale de
   la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`) y la pide
   el servidor en `app/api/map/[slug]`. Dos razones: cero JavaScript en una página
@@ -176,24 +131,26 @@ services/booking/
 
 ## Reglas del proyecto
 
-- **`app/(marketing)/page.tsx` no lleva maquetación ni copy.** Sólo ordena
-  secciones. Lo mismo vale para `app/(booking)/[businessSlug]/page.tsx`.
+- **`app/(booking)/[businessSlug]/page.tsx` no lleva copy.** Sólo ordena la
+  página.
 - **Todo el copy vive en `content/`.** Si estás escribiendo texto visible dentro
   de un `.tsx`, está en el lugar equivocado.
-- **Server Components por defecto.** En la landing el único componente cliente
-  es `<Reveal>`, y sólo porque necesita un observador.
-- **Los CTA salen de `config/cta.ts`.** Hay un número real donde cualquiera
-  puede probar el asistente; si cambia, se cambia ahí y en ningún otro lado.
+- **Server Components por defecto.**
 
-## Antes de publicar
+## Pendientes conocidos
 
-Buscar los `TODO` en `config/site.ts` y `content/legal.ts`: dominio, correo,
-razón social y domicilio deben ser reales y verificables para la revisión de
-Meta.
+- **`app/opengraph-image.tsx` es de la landing vieja.** Dice "Contestá todos los
+  mensajes sin soltar la tijera" sobre un fondo azul oscuro: era la dirección
+  visual anterior y además le habla al dueño del negocio. Como las páginas de
+  reserva no declaran su propia imagen, ésa es la vista previa que aparece
+  cuando alguien pega el enlace de una barbería en WhatsApp. Hay que
+  reemplazarla por una imagen por negocio (nombre y dirección) o por una
+  neutra. `app/icon.tsx` arrastra el mismo azul (`#0b50e8`).
+- **El buscador del marketplace**, y con él el sitemap: hoy `app/sitemap.ts`
+  lista sólo la raíz, y el lugar donde habría que pedirle a la API la lista de
+  negocios publicados está marcado ahí.
 
 ## Restricciones de marca (no negociables)
 
 No usar el logotipo de WhatsApp, Meta ni Google, no imitar su interfaz al pixel
-y no insinuar afiliación. El teléfono del hero evoca una conversación sin
-copiar la interfaz de nadie y sin usar el verde de WhatsApp. El descargo va sí o
-sí en el pie (`landing.footer.disclaimer` y `legalChrome.disclaimer`).
+y no insinuar afiliación.

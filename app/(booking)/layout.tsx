@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { booking } from "@/content/booking";
 import { site } from "@/config/site";
@@ -26,12 +25,12 @@ export default function BookingLayout({
 
       <footer className="px-5 py-8 text-center text-sm text-ink-500">
         {booking.footer.poweredBy}{" "}
-        <Link
-          href="/"
+        <a
+          href={site.landingUrl}
           className="font-medium text-ink-700 underline-offset-4 hover:underline"
         >
           {site.name}
-        </Link>
+        </a>
       </footer>
     </div>
   );
