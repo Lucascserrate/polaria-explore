@@ -112,8 +112,8 @@ export function BookingScreen({
 			</Container>
 
 			<Container className="max-w-6xl">
-				<div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
-					<div className="space-y-6">
+				<div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+					<div className="min-w-0 space-y-6">
 						<div className="space-y-3">
 							<BookingBreadcrumbs
 								slug={profile.slug}
