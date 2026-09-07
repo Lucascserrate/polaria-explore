@@ -16,8 +16,18 @@ nada: en este dominio el visitante es **el cliente del negocio**, no el dueño, 
 no hay nada que venderle. Si estás por escribir copy que le habla a un negocio
 sobre software, estás en el repositorio equivocado.
 
-Lo único que queda de Polaria en este sitio es la firma al pie de la reserva,
-que enlaza a la landing (`site.landingUrl`).
+**Polaria sí se muestra, pero como marketplace y no como software.** La barra
+de arriba (`components/layout/navbar.tsx`, en el layout raíz) comparte la forma
+con la de `polaria-landing` —misma marca, misma altura, misma línea de 1px— y
+no su contenido: el logo lleva a la raíz, que va a ser el buscador, y a la
+derecha va la cuenta de quien reserva cuando hay sesión. Nada más.
+
+Lo que sigue prohibido es lo de siempre, y es la parte que importa: ningún
+enlace ni botón que le hable al dueño de un negocio. Un "Probá Polaria gratis"
+arriba de la reserva de una barbería es publicidad de un tercero metida en el
+local de otro, y sería el enlace más visible de la página justo cuando lo único
+que hay que hacer es reservar. La única mención de ese tipo es la firma al pie
+de la reserva, que enlaza a la landing (`site.landingUrl`).
 
 ## Comandos
 

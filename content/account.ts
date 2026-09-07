@@ -6,6 +6,13 @@
  * registro que el resto del sitio: le habla al cliente, no a un negocio.
  */
 export const account = {
+	/** La barra de arriba, que es la del marketplace y no la de la landing. */
+	nav: {
+		label: 'Tu cuenta',
+		/** Para el lector de pantalla: el logo es un enlace, no un adorno. */
+		home: 'Polaria, ir al inicio',
+	},
+
 	bar: {
 		/**
 		 * Quién está en sesión. Sólo el nombre, sin "hola" ni "bienvenido".

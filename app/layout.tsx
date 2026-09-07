@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Instrument_Sans } from "next/font/google";
 import { site } from "@/config/site";
+import { Navbar } from "@/components/layout/navbar";
+import { getCustomerSession } from "@/services/customer/server/session";
 import "./globals.css";
 
 /**
@@ -21,17 +23,21 @@ const instrumentSans = Instrument_Sans({
 });
 
 /**
- * El layout raíz sólo arma el documento: fuente, estilos y `<body>`.
+ * El layout raíz: el documento y la barra del marketplace.
  *
- * El encabezado y el pie no están acá: los trae `app/(booking)`, que es el
- * único grupo de rutas que hay por ahora. La landing —con su navegación, su
- * pie y sus páginas legales— se fue al repositorio `polaria-landing`, así que
- * en este dominio no hay nada que le hable al dueño del negocio: el visitante
- * es su cliente, y una barra que diga "Probá Polaria gratis" sería publicidad
- * de un tercero encima de la reserva.
+ * La barra vive acá y no en `app/(booking)` porque es del **dominio**, no de
+ * las páginas de reserva: cuando exista el buscador, la misma barra va a estar
+ * arriba de él. Comparte la forma con la de `polaria-landing` —misma marca— y
+ * no su contenido: en este dominio el visitante es el cliente de un negocio,
+ * así que no hay enlaces ni botones que le hablen al dueño. Ver `Navbar`.
  *
- * Lo que se agregue acá lo hereda todo el dominio, incluido el buscador del
- * marketplace cuando exista. Antes de tocarlo: ¿esto es del documento?
+ * **Leer la sesión acá vuelve dinámicas todas las páginas del dominio**,
+ * incluida la raíz, que antes se prerenderizaba. Es el precio de que la barra
+ * sepa quién está en sesión en cualquier página, y es un precio que ya
+ * pagábamos en las de reserva. El día que sea un problema, la salida no es
+ * mover la barra sino aislar su parte de cuenta con PPR.
+ *
+ * El pie sigue en `app/(booking)`: es la firma de la reserva, no del sitio.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -44,9 +50,11 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getCustomerSession();
+
   return (
     <html
       lang="es"
@@ -68,6 +76,7 @@ export default function RootLayout({
             __html: "document.documentElement.classList.add('js')",
           }}
         />
+        <Navbar session={session} />
         {children}
       </body>
     </html>

@@ -1,11 +1,13 @@
 import { QueryProvider } from "@/components/providers/query-provider";
-import { CustomerBar } from "@/features/customer/CustomerBar";
-import { getCustomerSession } from "@/services/customer/server/session";
 import { booking } from "@/content/booking";
 import { site } from "@/config/site";
 
 /**
- * Las páginas públicas de reserva, sin la navegación de la landing.
+ * Las páginas públicas de reserva: lo que va **debajo** de la barra.
+ *
+ * La barra del marketplace la pone el layout raíz, porque es del dominio. Acá
+ * queda el pie, que es de estas páginas: la firma de Polaria al final de una
+ * reserva.
  *
  * El visitante de este grupo de rutas es el cliente de una barbería, no un
  * negocio buscando software. Un encabezado que diga "Probá Polaria gratis"
@@ -15,19 +17,11 @@ import { site } from "@/config/site";
  *
  * Lo único que queda de Polaria es una línea al pie, del tamaño de una firma.
  */
-export default async function BookingLayout({
+export default function BookingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  /*
-   * La sesión se resuelve acá y no en cada página: la barra tiene que estar en
-   * las dos —la del negocio y la de reserva— y con `cache` de React esto y lo
-   * que pide la pantalla de reserva son una sola consulta por render.
-   */
-  const session = await getCustomerSession();
-
   return (
     <div className="flex min-h-full flex-col bg-paper-50">
-      <CustomerBar session={session} />
 
       {/* Sólo este grupo de rutas pide datos al backend desde el navegador. */}
       <QueryProvider>
