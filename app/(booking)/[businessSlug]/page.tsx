@@ -64,7 +64,7 @@ export default async function BusinessBookingPage({ params }: Props) {
 			<main className="pb-10">
 				<Container className="max-w-6xl pb-6 pt-0 sm:py-10">
 					<div className="flex flex-col">
-						<div className="relative z-10 order-2 -mt-4 rounded-t-2xl bg-paper-50 pt-5 sm:order-1 sm:mt-0 sm:rounded-none sm:pt-0">
+						<div className="relative z-10 order-2 -mx-5 -mt-4 rounded-t-2xl bg-paper-50 px-5 pt-5 sm:order-1 sm:mx-0 sm:mt-0 sm:rounded-none sm:px-0 sm:pt-0">
 							<BusinessHeader profile={profile} />
 						</div>
 						<div className="order-1 sm:order-2 sm:mt-6">

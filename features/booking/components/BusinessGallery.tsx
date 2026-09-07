@@ -150,7 +150,7 @@ export function BusinessGallery({
 							onClick={() => scrollTo(index + 1)}
 						/>
 
-						<p className="absolute bottom-3 right-3 rounded-full bg-ink-950/70 px-2.5 py-1 text-xs font-medium text-paper-50">
+						<p className="absolute bottom-7 right-3 rounded-full bg-ink-950/70 px-2.5 py-1 text-xs font-medium text-paper-50 sm:bottom-3">
 							{booking.gallery.counter(index + 1, photos.length)}
 						</p>
 					</div>
