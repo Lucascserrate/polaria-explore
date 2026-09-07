@@ -7,6 +7,7 @@ import { useCreateBooking } from '@/services/booking/hooks/useCreateBooking';
 import { useDays } from '@/services/booking/hooks/useDays';
 import { useSlots } from '@/services/booking/hooks/useSlots';
 import { useStaff } from '@/services/booking/hooks/useStaff';
+import type { CustomerSession } from '@/services/customer/types';
 import type {
 	PublicBookingConfirmation,
 	PublicBusinessProfile,
@@ -78,14 +79,17 @@ export type BookingFlowState = {
 	slot: PublicSlot | null;
 	confirmation: PublicBookingConfirmation | null;
 	/**
-	 * Lo que el cliente escribió de sí mismo.
+	 * Quién está en sesión, o `null`.
 	 *
-	 * Vive en el flujo y no dentro del paso de datos porque el paso se desmonta:
-	 * cuando el horario se ocupa mientras alguien termina de escribir su nombre,
-	 * se lo manda de vuelta a elegir otro, y volver a pedirle el nombre y el
-	 * teléfono sería castigarlo por una carrera que perdió sin enterarse.
+	 * Llega resuelta del servidor y vive en el flujo porque cambia mientras el
+	 * flujo está abierto: al agregar el teléfono, la misma sesión pasa de "le
+	 * falta el número" a "lista para reservar" sin recargar la página.
+	 *
+	 * Reemplazó al nombre y el teléfono escritos a mano. Ya no hay formulario:
+	 * los datos de quien reserva salen de su cuenta, y el backend los toma de ahí
+	 * ignorando lo que mande el navegador.
 	 */
-	customer: { name: string; phone: string };
+	session: CustomerSession | null;
 	loading: boolean;
 	submitting: boolean;
 	error: string | null;
@@ -93,7 +97,11 @@ export type BookingFlowState = {
 	canGoBack: boolean;
 };
 
-export function useBookingFlow(profile: PublicBusinessProfile) {
+export function useBookingFlow(
+	profile: PublicBusinessProfile,
+	/** La sesión tal como la resolvió el servidor al renderizar la página. */
+	initialSession: CustomerSession | null,
+) {
 	const slug = profile.slug;
 
 	const [open, setOpen] = useState(false);
@@ -101,7 +109,7 @@ export function useBookingFlow(profile: PublicBusinessProfile) {
 	const [rawStep, setRawStep] = useState<BookingStep>('service');
 	const [service, setService] = useState<PublicService | null>(null);
 	const [slot, setSlot] = useState<PublicSlot | null>(null);
-	const [customer, setCustomer] = useState({ name: '', phone: '' });
+	const [session, setSession] = useState(initialSession);
 
 	/**
 	 * La elección de profesional, separada en dos.
@@ -192,7 +200,6 @@ export function useBookingFlow(profile: PublicBusinessProfile) {
 		(from?: PublicService) => {
 			create.reset();
 			setSlot(null);
-			setCustomer({ name: '', phone: '' });
 			setManualDate(null);
 			setStaffChoice({ chosen: false, value: null });
 			setOpen(true);
@@ -261,24 +268,31 @@ export function useBookingFlow(profile: PublicBusinessProfile) {
 		[goTo],
 	);
 
-	const updateCustomer = useCallback(
-		(next: { name: string; phone: string }) => setCustomer(next),
+	/**
+	 * La sesión cambió sin recargar: se acaba de guardar el teléfono.
+	 *
+	 * Es lo que permite que el paso siguiente sea confirmar y no volver a pedir
+	 * el número. La fuente sigue siendo el servidor; esto solo adelanta lo que
+	 * la próxima carga va a decir igual.
+	 */
+	const updateSession = useCallback(
+		(next: CustomerSession) => setSession(next),
 		[],
 	);
 
+	/**
+	 * Confirma la reserva. No lleva datos de quien reserva: los toma la API de la
+	 * sesión, que es la única fuente que no se puede falsear desde el navegador.
+	 */
 	const confirm = useCallback(
-		async (next: { name: string; phone: string }) => {
+		async () => {
 			if (!service || !slot) return;
-
-			setCustomer(next);
 
 			create.mutate(
 				{
 					serviceId: service.id,
 					staffId: staff?.id,
 					startTime: slot.startTime,
-					customerName: next.name,
-					customerPhone: next.phone,
 				},
 				{
 					onSuccess: () => {
@@ -338,7 +352,7 @@ export function useBookingFlow(profile: PublicBusinessProfile) {
 			slots,
 			slot,
 			confirmation: create.data ?? null,
-			customer,
+			session,
 			loading,
 			submitting: create.isPending,
 			error: messageOf(create.error) ?? messageOf(stepError),
@@ -351,7 +365,7 @@ export function useBookingFlow(profile: PublicBusinessProfile) {
 		selectStaff,
 		selectDate,
 		selectSlot,
-		updateCustomer,
+		updateSession,
 		confirm,
 	};
 }

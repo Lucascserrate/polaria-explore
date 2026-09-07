@@ -117,8 +117,37 @@ export const booking = {
 				'No hay días con atención en las próximas semanas. Escribile al negocio para coordinar.',
 		},
 
+		/**
+		 * El último paso, cuando hay que identificarse.
+		 *
+		 * Se pide cuenta y no nombre y teléfono a mano, y el texto tiene que
+		 * explicar por qué en una línea: quien llega hasta acá quiere un turno, no
+		 * registrarse. Lo que se le ofrece a cambio es no volver a escribir sus
+		 * datos nunca más, en este negocio ni en ningún otro de Polaria.
+		 */
+		identity: {
+			title: 'Confirmá quién sos',
+			/** Lo que se gana iniciando sesión, dicho antes de pedirlo. */
+			why: 'Entrá con Google y no vuelvas a escribir tus datos: quedan guardados para la próxima, acá y en cualquier negocio de Polaria.',
+			google: 'Continuar con Google',
+			/** No es un requisito de Polaria: es cómo se avisa de un turno. */
+			whatsappNote:
+				'También podés reservar escribiéndole al negocio por WhatsApp.',
+		},
+
+		/** Pedir el teléfono, lo único que Google no da. */
+		phoneStep: {
+			title: 'Añadir teléfono',
+			subtitle: 'Es a donde te llega la confirmación y el recordatorio.',
+			label: 'Número de teléfono',
+			submit: 'Continuar',
+			saving: 'Guardando…',
+		},
+
 		details: {
 			title: 'Tus datos',
+			/** El resumen de la cuenta, ya con todo listo para confirmar. */
+			bookingAs: 'Reservás como',
 			name: 'Tu nombre',
 			namePlaceholder: 'Cómo te anotamos',
 			phone: 'WhatsApp',

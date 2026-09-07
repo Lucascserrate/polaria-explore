@@ -40,7 +40,7 @@ export function BookingDialog({
   onSelectStaff,
   onSelectDate,
   onSelectSlot,
-  onChangeCustomer,
+  onSessionChange,
   onConfirm,
 }: {
   profile: PublicBusinessProfile;
@@ -51,7 +51,7 @@ export function BookingDialog({
   onSelectStaff: React.ComponentProps<typeof StaffStep>["onSelectStaff"];
   onSelectDate: React.ComponentProps<typeof SlotStep>["onSelectDate"];
   onSelectSlot: React.ComponentProps<typeof SlotStep>["onSelectSlot"];
-  onChangeCustomer: React.ComponentProps<typeof DetailsStep>["onChangeCustomer"];
+  onSessionChange: React.ComponentProps<typeof DetailsStep>["onSessionChange"];
   onConfirm: React.ComponentProps<typeof DetailsStep>["onConfirm"];
 }) {
   const panel = useRef<HTMLDivElement>(null);
@@ -163,7 +163,7 @@ export function BookingDialog({
             <DetailsStep
               profile={profile}
               state={state}
-              onChangeCustomer={onChangeCustomer}
+              onSessionChange={onSessionChange}
               onConfirm={onConfirm}
             />
           )}

@@ -18,6 +18,8 @@ import type {
 	PublicSlot,
 	PublicStaff,
 } from '@/services/booking/types';
+import type { CustomerSession } from '@/services/customer/types';
+import { saveCustomerPhone } from '@/services/customer/phone';
 import { AnyStaffAvatar, StaffAvatar } from './StaffAvatar';
 
 /**
@@ -35,9 +37,9 @@ type Handlers = {
 	onSelectStaff: (staff: PublicStaff | null) => void;
 	onSelectDate: (date: string) => void;
 	onSelectSlot: (slot: PublicSlot) => void;
-	/** Cada tecla: el flujo guarda lo escrito para que sobreviva a un paso atrás. */
-	onChangeCustomer: (customer: { name: string; phone: string }) => void;
-	onConfirm: (customer: { name: string; phone: string }) => void;
+	/** El teléfono se guardó en la cuenta: la sesión ya sirve para reservar. */
+	onSessionChange: (session: CustomerSession) => void;
+	onConfirm: () => void;
 	onClose: () => void;
 };
 
@@ -265,88 +267,218 @@ export function SlotStep({
 export function DetailsStep({
 	profile,
 	state,
-	onChangeCustomer,
+	onSessionChange,
 	onConfirm,
 }: {
 	profile: PublicBusinessProfile;
 	state: BookingFlowState;
-	onChangeCustomer: Handlers['onChangeCustomer'];
-	onConfirm: Handlers['onConfirm'];
+	onSessionChange: Handlers["onSessionChange"];
+	onConfirm: Handlers["onConfirm"];
 }) {
-	const [touched, setTouched] = useState(false);
-	const { name, phone } = state.customer;
+	/*
+	 * Tres estados, en el orden en que los ve una persona nueva: no inició
+	 * sesión, inició pero no dio su teléfono, y listo para confirmar. El tercero
+	 * es el único que ve quien ya reservó antes en cualquier negocio de Polaria,
+	 * y para esa persona este paso es un botón.
+	 */
+	if (!state.session) return <SignInStep />;
 
-	const missingName = touched && name.trim().length === 0;
-	const missingPhone = touched && phone.trim().length === 0;
+	if (!state.session.phone) {
+		return (
+			<PhoneStep
+				profile={profile}
+				onSaved={onSessionChange}
+			/>
+		);
+	}
 
-	const submit = (event: React.FormEvent) => {
+	return (
+		<ConfirmStep
+			profile={profile}
+			session={state.session}
+			submitting={state.submitting}
+			onConfirm={onConfirm}
+		/>
+	);
+}
+
+/**
+ * Iniciar sesión, que reemplazó al formulario de nombre y teléfono.
+ *
+ * Es un enlace y no un `fetch`: iniciar sesión con Google es una navegación del
+ * navegador —sale del sitio, pasa por Google y vuelve—, y el destino es una ruta
+ * de este mismo sitio para no escribir la dirección de la API en el HTML. Ver
+ * `app/api/customer/login`.
+ *
+ * El `returnTo` es la página del negocio donde está reservando, así que al
+ * volver sigue viendo lo mismo. Lo que **no** sobrevive al viaje es el paso en
+ * el que estaba: al volver tiene que elegir servicio y horario otra vez. Es la
+ * arruga conocida de esta primera versión y se arregla guardando el flujo antes
+ * de salir; no se hizo todavía porque el caso que importa —quien ya tiene
+ * cuenta— nunca pasa por acá.
+ */
+function SignInStep() {
+	const returnTo =
+		typeof window === "undefined"
+			? "/"
+			: `${window.location.pathname}${window.location.search}`;
+
+	return (
+		<div className="space-y-5">
+			<p className="text-ink-600">{booking.flow.identity.why}</p>
+
+			<Button
+				size="lg"
+				className="w-full"
+				href={`/api/customer/login?returnTo=${encodeURIComponent(returnTo)}`}
+			>
+				{booking.flow.identity.google}
+			</Button>
+
+			<p className="text-sm text-ink-500">
+				{booking.flow.identity.whatsappNote}
+			</p>
+		</div>
+	);
+}
+
+/**
+ * El teléfono: lo único que Google no entrega.
+ *
+ * Se pide una sola vez en la vida de la cuenta, y por eso el texto dice para qué
+ * es: es el número al que llega la confirmación y el recordatorio, no un dato de
+ * registro. El prefijo se muestra al costado y no se escribe —es el del país del
+ * negocio—, y quien tenga un número de otro país puede escribirlo completo con
+ * `+`: eso lo resuelve el backend, que es el único que normaliza teléfonos.
+ */
+function PhoneStep({
+	profile,
+	onSaved,
+}: {
+	profile: PublicBusinessProfile;
+	onSaved: (session: CustomerSession) => void;
+}) {
+	const [phone, setPhone] = useState("");
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const submit = async (event: React.FormEvent) => {
 		event.preventDefault();
-		setTouched(true);
-		if (!name.trim() || !phone.trim()) return;
-		onConfirm({ name: name.trim(), phone: phone.trim() });
+		if (!phone.trim() || saving) return;
+
+		setSaving(true);
+		setError(null);
+
+		try {
+			onSaved(
+				await saveCustomerPhone({
+					phone: phone.trim(),
+					timezone: profile.timezone,
+				}),
+			);
+		} catch (cause) {
+			setError(
+				cause instanceof Error
+					? cause.message
+					: "No pudimos guardar el número. Probá de nuevo.",
+			);
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	return (
 		<form className="space-y-5" onSubmit={submit}>
-			<Field
-				id="booking-name"
-				label={booking.flow.details.name}
-				error={missingName ? booking.flow.errors.nameRequired : undefined}
-			>
-				<input
-					id="booking-name"
-					value={name}
-					onChange={(event) =>
-						onChangeCustomer({ name: event.target.value, phone })
-					}
-					placeholder={booking.flow.details.namePlaceholder}
-					autoComplete="name"
-					className={inputClasses}
-				/>
-			</Field>
+			<p className="text-ink-600">{booking.flow.phoneStep.subtitle}</p>
 
 			<Field
-				id="booking-phone"
-				label={booking.flow.details.phone}
+				id="customer-phone"
+				label={booking.flow.phoneStep.label}
 				hint={booking.flow.details.phoneHint}
-				error={missingPhone ? booking.flow.errors.phoneRequired : undefined}
+				error={error ?? undefined}
 			>
-				{/*
-				 * El prefijo se muestra fijo al costado y no se escribe: es el del país
-				 * del negocio, y es lo que permite reconocer al cliente que ya escribió
-				 * por WhatsApp en lugar de crearlo de nuevo. Quien tenga un número de
-				 * otro país puede escribirlo completo con "+" y el servidor lo respeta.
-				 */}
 				<div className="flex items-stretch gap-2">
 					<span className="flex shrink-0 items-center rounded-xl bg-paper-200 px-3 text-sm text-ink-600 tabular-nums">
 						+{profile.dialCode}
 					</span>
 					<input
-						id="booking-phone"
+						id="customer-phone"
 						value={phone}
-						onChange={(event) =>
-							onChangeCustomer({ name, phone: event.target.value })
-						}
+						onChange={(event) => setPhone(event.target.value)}
 						placeholder={booking.flow.details.phonePlaceholder}
 						inputMode="tel"
 						autoComplete="tel"
-						className={cn(inputClasses, 'flex-1')}
+						autoFocus
+						className={cn(inputClasses, "flex-1")}
 					/>
 				</div>
 			</Field>
 
-			<Button
-				type="submit"
-				size="lg"
-				className="w-full"
-				disabled={state.submitting}
-			>
-				{state.submitting
-					? booking.flow.details.submitting
-					: booking.flow.details.submit}
+			<Button type="submit" size="lg" className="w-full" disabled={saving}>
+				{saving
+					? booking.flow.phoneStep.saving
+					: booking.flow.phoneStep.submit}
 			</Button>
 		</form>
 	);
+}
+
+/** Con cuenta y teléfono, reservar es leer y apretar un botón. */
+function ConfirmStep({
+	profile,
+	session,
+	submitting,
+	onConfirm,
+}: {
+	profile: PublicBusinessProfile;
+	session: CustomerSession;
+	submitting: boolean;
+	onConfirm: () => void;
+}) {
+	return (
+		<div className="space-y-5">
+			{/*
+			 * Los datos se muestran completos y no detrás de un "usar mi cuenta": el
+			 * número es por donde llega el recordatorio, así que quien lo cambió tiene
+			 * que poder verlo antes de confirmar y no cuando no le llega nada.
+			 */}
+			<div className="space-y-1 rounded-2xl bg-paper-200 px-5 py-4">
+				<p className="text-sm text-ink-600">
+					{booking.flow.details.bookingAs}
+				</p>
+				<p className="font-medium">{session.name}</p>
+				<p className="text-ink-700 tabular-nums">
+					{session.phone ? formatPhone(session.phone, profile.dialCode) : ""}
+				</p>
+			</div>
+
+			<Button
+				size="lg"
+				className="w-full"
+				disabled={submitting}
+				onClick={onConfirm}
+			>
+				{submitting
+					? booking.flow.details.submitting
+					: booking.flow.details.submit}
+			</Button>
+		</div>
+	);
+}
+
+/**
+ * El teléfono guardado, en la forma en que la persona lo escribió.
+ *
+ * La cuenta lo guarda como lo guarda WhatsApp —dígitos con código de país y sin
+ * `+`, `59170011223`— y eso no se le muestra así a nadie. Se le devuelve el `+`
+ * y se separa el prefijo del negocio cuando coincide; si el número es de otro
+ * país, se muestra completo, que es más honesto que partirlo por un prefijo que
+ * no es el suyo.
+ */
+function formatPhone(phone: string, dialCode: string): string {
+	return phone.startsWith(dialCode)
+		? `+${dialCode} ${phone.slice(dialCode.length)}`
+		: `+${phone}`;
 }
 
 export function DoneStep({

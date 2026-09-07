@@ -95,6 +95,11 @@ export type CreateBookingInput = {
 	/** Ausente es "cualquier profesional". */
 	staffId?: string;
 	startTime: string;
-	customerName: string;
-	customerPhone: string;
+	/**
+	 * Quién reserva. **Se omiten cuando hay sesión de cliente**: en ese caso los
+	 * toma la API de la cuenta, y mandarlos vacíos haría fallar su validación de
+	 * longitud —`@IsOptional` deja pasar lo ausente, no lo vacío—.
+	 */
+	customerName?: string;
+	customerPhone?: string;
 };

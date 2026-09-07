@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo } from "react";
 import { useBookingFlow } from "../useBookingFlow";
 import type { PublicBusinessProfile, PublicService } from "@/services/booking/types";
+import type { CustomerSession } from "@/services/customer/types";
 import { BookingDialog } from "./BookingDialog";
 
 /**
@@ -36,12 +37,18 @@ export function useBooking(): BookingContextValue {
 
 export function BookingProvider({
   profile,
+  customer,
   children,
 }: {
   profile: PublicBusinessProfile;
+  /**
+   * La sesión de quien reserva, resuelta en el servidor. `null` si no inició
+   * sesión, que es como llega casi todo el mundo la primera vez.
+   */
+  customer: CustomerSession | null;
   children: React.ReactNode;
 }) {
-  const flow = useBookingFlow(profile);
+  const flow = useBookingFlow(profile, customer);
   const value = useMemo(() => ({ start: flow.start }), [flow.start]);
 
   return (
@@ -57,7 +64,7 @@ export function BookingProvider({
           onSelectStaff={flow.selectStaff}
           onSelectDate={flow.selectDate}
           onSelectSlot={flow.selectSlot}
-          onChangeCustomer={flow.updateCustomer}
+          onSessionChange={flow.updateSession}
           onConfirm={flow.confirm}
         />
       )}

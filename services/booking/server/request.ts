@@ -37,21 +37,36 @@ export class BookingApiError extends Error {
 type FetchOptions = {
 	/** Segundos de caché. Omitirlo pide siempre en vivo. */
 	revalidate?: number;
+	/**
+	 * Cookies a reenviar a la API, cuando la respuesta depende de quién pregunta.
+	 *
+	 * Lo usa la sesión de quien reserva: la cookie la tiene el navegador, la API
+	 * la necesita, y en el medio está este servidor. Una petición con cookie
+	 * **nunca** se cachea —se ignora `revalidate`— porque una respuesta que
+	 * depende de la sesión guardada en la caché compartida es la sesión de una
+	 * persona servida a otra.
+	 */
+	cookie?: string;
 };
 
 export async function request<T>(
 	path: string,
 	init?: RequestInit & FetchOptions,
 ): Promise<T> {
-	const { revalidate, ...rest } = init ?? {};
+	const { revalidate, cookie, ...rest } = init ?? {};
+	const cacheable = revalidate !== undefined && !cookie;
 
 	const response = await fetch(`${POLARIA_API_URL}${path}`, {
 		...rest,
-		headers: { 'Content-Type': 'application/json', ...rest.headers },
+		headers: {
+			'Content-Type': 'application/json',
+			...(cookie ? { Cookie: cookie } : {}),
+			...rest.headers,
+		},
 		// Sin `revalidate` explícito, en vivo: es lo correcto para todo lo que
 		// depende de la agenda, que cambia mientras el cliente mira la pantalla.
-		cache: revalidate === undefined ? 'no-store' : undefined,
-		next: revalidate === undefined ? undefined : { revalidate },
+		cache: cacheable ? undefined : 'no-store',
+		next: cacheable ? { revalidate } : undefined,
 	});
 
 	if (!response.ok) {

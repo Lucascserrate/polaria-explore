@@ -1,5 +1,6 @@
 import { createBooking } from "@/services/booking/server/bookings";
 import { toErrorResponse } from "@/services/booking/server/request";
+import { customerCookieHeader } from "@/services/customer/server/session";
 import type { CreateBookingInput } from "@/services/booking/types";
 
 /**
@@ -13,6 +14,11 @@ import type { CreateBookingInput } from "@/services/booking/types";
  * Lo que **no** viaja desde el navegador: la duración, el precio y el
  * profesional definitivo. Los tres los resuelve el servidor a partir del
  * servicio y de la disponibilidad real.
+ *
+ * Con sesión de cliente tampoco viajan el nombre ni el teléfono: los toma la
+ * API de la cuenta. Por eso el chequeo de campos de abajo depende de si hay
+ * cookie —exigirlos igual dejaría a quien inició sesión sin poder reservar—, y
+ * si el navegador los manda de todas formas, la API los ignora.
  */
 export async function POST(
   request: Request,
@@ -28,20 +34,26 @@ export async function POST(
   const startTime = asText(body?.startTime);
   const customerName = asText(body?.customerName);
   const customerPhone = asText(body?.customerPhone);
+  const cookie = customerCookieHeader(request.headers.get("cookie"));
 
-  if (!serviceId || !startTime || !customerName || !customerPhone) {
+  const missingCustomer = !cookie && (!customerName || !customerPhone);
+  if (!serviceId || !startTime || missingCustomer) {
     return Response.json({ message: "Faltan datos" }, { status: 400 });
   }
 
   try {
     return Response.json(
-      await createBooking(slug, {
-        serviceId,
-        staffId: asText(body?.staffId) || undefined,
-        startTime,
-        customerName,
-        customerPhone,
-      }),
+      await createBooking(
+        slug,
+        {
+          serviceId,
+          staffId: asText(body?.staffId) || undefined,
+          startTime,
+          // Con sesión no se mandan: los pone la API desde la cuenta.
+          ...(cookie ? {} : { customerName, customerPhone }),
+        },
+        cookie,
+      ),
       { status: 201 },
     );
   } catch (error) {
