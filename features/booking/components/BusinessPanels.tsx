@@ -9,6 +9,7 @@ import type {
 	WeeklyRange,
 } from '@/services/booking/types';
 import MapMarker from './MapMarker';
+import { StaffAvatar } from './StaffAvatar';
 
 /**
  * Lo que se consulta después de haber decidido reservar: horarios y dirección.
@@ -17,6 +18,53 @@ import MapMarker from './MapMarker';
  * razón por la que alguien abrió el enlace, y ponerlos arriba empuja los
  * servicios —que sí lo son— fuera de la primera pantalla.
  */
+
+/**
+ * El equipo que atiende: quién te va a cortar el pelo.
+ *
+ * Va debajo de los horarios y no arriba de los servicios: quien abre el enlace
+ * viene a reservar algo, y las caras del equipo son lo que mira después, cuando
+ * ya sabe qué quiere y cuánto sale. Es también el orden en que se puede
+ * responder "¿está Carlos los sábados?".
+ *
+ * Sin equipo cargado no hay sección. Igual que con las fotos del local: un
+ * título con un hueco debajo se lee como una página a medio cargar, y un
+ * negocio de una sola persona no tiene nada que listar acá.
+ *
+ * No es una lista de opciones: no se puede tocar, no lleva a ninguna parte y no
+ * dice quién hace qué servicio. Elegir profesional es un paso de la reserva, y
+ * ahí sí las fotos son botones. Duplicar esa elección acá abriría dos caminos a
+ * lo mismo, con la diferencia de que este no sabe qué servicio quiere el
+ * cliente todavía.
+ */
+export function TeamPanel({ profile }: { profile: PublicBusinessProfile }) {
+	if (profile.team.length === 0) return null;
+
+	return (
+		<section aria-labelledby="equipo" className="space-y-4">
+			<h2 id="equipo" className="text-xl font-semibold">
+				{booking.team.title}
+			</h2>
+
+			<ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+				{profile.team.map((member) => (
+					<li key={member.id} className="flex flex-col items-center gap-3">
+						<StaffAvatar member={member} size={112} />
+
+						<div className="min-w-0 text-center">
+							<p className="truncate font-medium">{member.name}</p>
+							{member.jobTitle && (
+								<p className="truncate text-sm text-ink-500">
+									{member.jobTitle}
+								</p>
+							)}
+						</div>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
 
 export function SchedulePanel({ profile }: { profile: PublicBusinessProfile }) {
 	const byDay = groupByDay(profile.businessHours);

@@ -14,6 +14,7 @@ import { BusinessHeader } from '@/features/booking/components/BusinessHeader';
 import {
 	LocationPanel,
 	SchedulePanel,
+	TeamPanel,
 } from '@/features/booking/components/BusinessPanels';
 import { describeStatus } from '@/features/booking/format';
 
@@ -82,6 +83,7 @@ export default async function BusinessBookingPage({ params }: Props) {
 							</section>
 
 							<SchedulePanel profile={profile} />
+							<TeamPanel profile={profile} />
 							<LocationPanel profile={profile} />
 						</div>
 

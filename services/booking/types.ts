@@ -41,6 +41,7 @@ export type PublicStaff = {
 	id: string;
 	name: string;
 	jobTitle: string | null;
+	photoUrl: string | null;
 };
 
 export type PublicPhoto = {
@@ -65,6 +66,7 @@ export type PublicBusinessProfile = {
 	name: string;
 	businessType: string | null;
 	photos: PublicPhoto[];
+	team: PublicStaff[];
 	timezone: string;
 	/** ISO 4217. Los precios se formatean con esto, no con una moneda fija. */
 	currency: string;

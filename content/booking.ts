@@ -55,6 +55,11 @@ export const booking = {
 		bookNow: 'Reservar ahora',
 	},
 
+	team: {
+		title: 'Equipo',
+		photoAlt: (name: string) => name,
+	},
+
 	schedule: {
 		title: 'Horarios',
 		closed: 'Cerrado',
