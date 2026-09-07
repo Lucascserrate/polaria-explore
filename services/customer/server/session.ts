@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { request } from '@/services/booking/server/request';
 import type { CustomerSession } from '../types';
@@ -22,19 +23,25 @@ export const CUSTOMER_COOKIE = 'customerToken';
  * situaciones lo correcto es ofrecer iniciar sesión. Un error de red acá no
  * puede volverse una pantalla de error, porque el resto de la página —los
  * servicios, los horarios— no depende de esto.
+ *
+ * Envuelta en `cache` de React: la piden el layout —para la barra de arriba— y
+ * la pantalla de reserva, y sin esto serían dos viajes a la API por cada
+ * render para responder lo mismo.
  */
-export async function getCustomerSession(): Promise<CustomerSession | null> {
-	const token = (await cookies()).get(CUSTOMER_COOKIE)?.value;
-	if (!token) return null;
+export const getCustomerSession = cache(
+	async (): Promise<CustomerSession | null> => {
+		const token = (await cookies()).get(CUSTOMER_COOKIE)?.value;
+		if (!token) return null;
 
-	try {
-		return await request<CustomerSession | null>('/customer/me', {
-			cookie: `${CUSTOMER_COOKIE}=${encodeURIComponent(token)}`,
-		});
-	} catch {
-		return null;
-	}
-}
+		try {
+			return await request<CustomerSession | null>('/customer/me', {
+				cookie: `${CUSTOMER_COOKIE}=${encodeURIComponent(token)}`,
+			});
+		} catch {
+			return null;
+		}
+	},
+);
 
 /**
  * Saca del encabezado `Cookie` solo la de sesión de cliente.
