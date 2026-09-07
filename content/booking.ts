@@ -46,6 +46,9 @@ export const booking = {
 		photoAlt: (name: string, index: number, total: number) =>
 			`Foto ${index} de ${total} de ${name}`,
 	},
+	share: {
+		imageAlt: 'La foto de portada del negocio',
+	},
 
 	services: {
 		title: 'Servicios',

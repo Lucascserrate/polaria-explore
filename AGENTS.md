@@ -129,6 +129,14 @@ services/booking/
   dueño desde el panel (Configuración → Fotos del negocio), viven en Cloudinary
   y llegan en `profile.photos`, en orden y con sus medidas —que es lo que evita
   que la página salte mientras cargan—. La primera es la portada.
+- **La vista previa del enlace es la portada del negocio.**
+  `app/(booking)/[businessSlug]/opengraph-image.tsx` dibuja un PNG de 1200×630
+  con `profile.photos[0]` de fondo y el nombre y la dirección encima; sin fotos
+  queda la tarjeta negra con las iniciales, que también es una vista previa
+  terminada. Ahí no va el estado de apertura: WhatsApp cachea la imagen durante
+  días y un "Abierto hasta las 20:00" quemado en el PNG miente la mitad de la
+  semana. El recorte lo pide Cloudinary (`c_fill,g_auto`), no satori.
+
 - **La galería es la única parte cliente de la página**, junto al flujo de
   reserva. Necesita el índice actual del carrusel y las teclas del visor; el
   HTML igual llega con todas las fotos, así que sin JavaScript se ven y se
@@ -177,13 +185,13 @@ services/booking/
 
 ## Pendientes conocidos
 
-- **`app/opengraph-image.tsx` es de la landing vieja.** Dice "Contestá todos los
-  mensajes sin soltar la tijera" sobre un fondo azul oscuro: era la dirección
-  visual anterior y además le habla al dueño del negocio. Como las páginas de
-  reserva no declaran su propia imagen, ésa es la vista previa que aparece
-  cuando alguien pega el enlace de una barbería en WhatsApp. Hay que
-  reemplazarla por una imagen por negocio (nombre y dirección) o por una
-  neutra. `app/icon.tsx` arrastra el mismo azul (`#0b50e8`).
+- **`app/opengraph-image.tsx` sigue siendo de la landing vieja.** Dice "Contestá
+  todos los mensajes sin soltar la tijera" sobre un fondo azul oscuro: era la
+  dirección visual anterior y además le habla al dueño del negocio. Ya no es la
+  vista previa de las reservas —cada negocio declara la suya, ver abajo—, pero
+  sí la de la raíz y la de cualquier ruta nueva del dominio. Hay que
+  reemplazarla por una neutra. `app/icon.tsx` arrastra el mismo azul
+  (`#0b50e8`).
 - **El buscador del marketplace**, y con él el sitemap: hoy `app/sitemap.ts`
   lista sólo la raíz, y el lugar donde habría que pedirle a la API la lista de
   negocios publicados está marcado ahí.
