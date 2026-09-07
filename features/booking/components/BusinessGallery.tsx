@@ -24,7 +24,19 @@ export function BusinessGallery({
 
 	const scrollTo = (next: number) => {
 		const element = track.current;
-		if (!element) return;
+
+		if (!element) {
+			// El síntoma de que al <ul> le falte `ref={track}` es "las flechas no
+			// funcionan": sin error, sin nada en la consola y con el resto de la
+			// galería andando, porque el visor no usa el ref. Ya pasó una vez y
+			// llevó un rato largo encontrarlo. Este aviso es ese rato.
+			if (process.env.NODE_ENV !== 'production') {
+				console.error(
+					'BusinessGallery: el <ul> del carrusel se quedó sin ref={track}, así que las flechas no pueden desplazarlo.',
+				);
+			}
+			return;
+		}
 
 		const clamped = Math.min(Math.max(next, 0), photos.length - 1);
 		element.scrollTo({
@@ -39,6 +51,9 @@ export function BusinessGallery({
 		<>
 			<div className="relative -mx-5 sm:mx-0">
 				<ul
+					// Imprescindible: es lo único que las flechas tienen para desplazar
+					// la lista. Ver `scrollTo`.
+					ref={track}
 					onScroll={(event) => {
 						const element = event.currentTarget;
 						setIndex(Math.round(element.scrollLeft / element.clientWidth));
