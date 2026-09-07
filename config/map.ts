@@ -16,6 +16,46 @@
 export const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN?.trim() ?? "";
 
 /**
+ * El token del **mapa interactivo**, que sí viaja al navegador.
+ *
+ * Rompe la regla de arriba, y conviene entender por qué antes de usarlo: la API
+ * de imágenes estáticas la puede llamar el servidor, pero Mapbox GL JS pide sus
+ * tiles **desde el navegador**. No hay forma de tener un mapa que se arrastre y
+ * hacer zoom sin que el token esté en el cliente; la única alternativa sería
+ * proxyear cada tile por nuestro servidor, y son decenas por gesto.
+ *
+ * Entonces el trato es explícito:
+ *
+ * - Este token tiene que ser **distinto** del de arriba y estar **restringido
+ *   por dominio** en la cuenta de Mapbox (URL restrictions: `polariahq.com` y
+ *   `localhost` para desarrollo). Sin esa restricción es una factura abierta:
+ *   GL JS se cobra por carga de mapa, y un `pk.` público lo puede usar
+ *   cualquiera desde su propio sitio.
+ * - **La página de reserva no lo usa.** Ahí el mapa sigue siendo la imagen que
+ *   pide el servidor: es cero JavaScript en una página que se abre con datos
+ *   móviles, y una imagen no se puede robar por carga. Lo interactivo es para
+ *   el buscador del marketplace, donde arrastrar el mapa **es** la función.
+ *
+ * Sin token no hay mapa interactivo, y el componente lo dice en su lugar en vez
+ * de dejar un rectángulo gris. Ver `InteractiveMap`.
+ */
+export const MAPBOX_PUBLIC_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim() ?? "";
+
+/**
+ * El estilo del mapa interactivo.
+ *
+ * `streets-v12` acá y `v11` en el estático, y no es una inconsistencia: la
+ * limitación que obliga al `v11` es de la API de imágenes —no dibuja los
+ * estilos armados sobre el basemap "Standard"—, y GL JS no la tiene. En un mapa
+ * que se explora, la tipografía y el detalle de `v12` se leen mejor al hacer
+ * zoom.
+ */
+export const MAPBOX_PUBLIC_STYLE =
+  process.env.NEXT_PUBLIC_MAPBOX_STYLE?.trim() ||
+  "mapbox://styles/mapbox/streets-v12";
+
+/**
  * El estilo del mapa.
  *
  * `streets-v11` y no el gris de la landing: un mapa de calles se lee por el

@@ -43,10 +43,18 @@ npm run build
 POLARIA_API_URL=http://localhost:3001   # API de Polaria (server-side, sin NEXT_PUBLIC_)
 MAPBOX_TOKEN=pk....                     # opcional: el mapa de "Dónde estamos"
 MAPBOX_STYLE=mapbox://styles/mapbox/streets-v11 # opcional, ése es el valor por defecto
+NEXT_PUBLIC_MAPBOX_TOKEN=pk....         # opcional: el mapa interactivo del buscador
+NEXT_PUBLIC_MAPBOX_STYLE=mapbox://styles/mapbox/streets-v12 # opcional
 ```
 
-Sin `NEXT_PUBLIC_` a propósito: el navegador nunca llama a la API ni a Mapbox.
-Ver `config/api.ts` y `config/map.ts`.
+**`NEXT_PUBLIC_MAPBOX_TOKEN` es la única variable de este repositorio que viaja
+al navegador**, y es a propósito: Mapbox GL JS no puede funcionar sin ella. Tiene
+que ser un token distinto del server-side y restringido por dominio. Ver
+`config/map.ts` antes de tocarla.
+
+La API nunca se llama desde el navegador —eso no cambió— y el mapa estático
+tampoco. La excepción es el token del mapa interactivo, explicada abajo. Ver
+`config/api.ts` y `config/map.ts`.
 
 Sin `MAPBOX_TOKEN` no hay mapa y la sección "Dónde estamos" queda con la
 dirección y el enlace, que es como estaba. **No es un error que haya que
@@ -127,6 +135,15 @@ services/booking/
   desplazan con el dedo. Tiene dos formas —carrusel a sangre en el teléfono,
   grilla de portada más dos en escritorio— y **nunca** se avanza con la rueda
   del mouse: hay clientes cuyo mouse no la tiene.
+- **Hay dos mapas y no se mezclan.** La página de reserva usa la imagen
+  estática que pide el servidor; el buscador del marketplace va a usar
+  `components/map/interactive-map.tsx` (Mapbox GL JS). La diferencia no es
+  estética: la imagen la trae el servidor y el token nunca sale de ahí,
+  mientras GL JS pide sus tiles desde el navegador y **obliga** a publicar un
+  token. Por eso el interactivo lleva su propia variable
+  (`NEXT_PUBLIC_MAPBOX_TOKEN`), que tiene que ser **otro** token y estar
+  **restringido por dominio** en la cuenta de Mapbox: sin eso es una factura
+  abierta, porque GL JS se cobra por carga de mapa. Ver `config/map.ts`.
 - **El mapa de "Dónde estamos" es una imagen, no un mapa arrastrable.** Sale de
   la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`) y la pide
   el servidor en `app/api/map/[slug]`. Dos razones: cero JavaScript en una página
