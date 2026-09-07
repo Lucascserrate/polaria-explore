@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { booking } from '@/content/booking';
 import { cn } from '@/lib/utils';
+import { initials } from '@/lib/initials';
 import type { PublicStaff } from '@/services/booking/types';
 
 /**
@@ -109,22 +110,4 @@ export function AnyStaffAvatar({
 			</svg>
 		</span>
 	);
-}
-
-/**
- * Hasta dos iniciales: "Jose Pérez" → "JP", "Carlos" → "C".
- *
- * Se salta lo que no empieza con letra —un apodo entre comillas, un emoji en el
- * nombre— porque una inicial que no es una letra no dice nada. Si no queda
- * ninguna, devuelve cadena vacía y el círculo se ve liso: es mejor que un
- * signo raro.
- */
-function initials(name: string): string {
-	return name
-		.split(/\s+/)
-		.map((word) => word.trim())
-		.filter((word) => /^\p{L}/u.test(word))
-		.slice(0, 2)
-		.map((word) => word[0].toUpperCase())
-		.join('');
 }
