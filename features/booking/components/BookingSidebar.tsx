@@ -32,7 +32,7 @@ export function BookingSidebar({
           <StatusPill profile={profile} className="text-sm" />
         </div>
 
-        <BookNowButton className="w-full" />
+        <BookNowButton slug={profile.slug} className="w-full" />
 
         {(profile.address || directions) && (
           <div className="space-y-1 border-t border-paper-300 pt-4 text-sm">

@@ -3,12 +3,10 @@ import { notFound } from 'next/navigation';
 import { Container } from '@/components/ui/container';
 import { booking } from '@/content/booking';
 import { getBusinessProfile } from '@/services/booking/server/business';
-import { getCustomerSession } from '@/services/customer/server/session';
 import {
 	MobileBookingBar,
 	ServiceList,
 } from '@/features/booking/components/BookButton';
-import { BookingProvider } from '@/features/booking/components/BookingProvider';
 import { BookingSidebar } from '@/features/booking/components/BookingSidebar';
 import { BusinessGallery } from '@/features/booking/components/BusinessGallery';
 import { BusinessHeader } from '@/features/booking/components/BusinessHeader';
@@ -56,22 +54,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BusinessBookingPage({ params }: Props) {
 	const { businessSlug } = await params;
 
-	/*
-	 * Los dos en paralelo: el perfil no depende de quién mire, y la sesión no
-	 * depende del negocio. En serie, la página esperaría dos viajes a la API
-	 * para mostrar lo mismo.
-	 */
-	const [profile, customer] = await Promise.all([
-		getBusinessProfile(businessSlug),
-		getCustomerSession(),
-	]);
+	const profile = await getBusinessProfile(businessSlug);
 
 	// Un slug que no existe es un 404 de verdad, no una pantalla de error: la
 	// URL la escribe gente a mano y se equivoca.
 	if (!profile) notFound();
 
 	return (
-		<BookingProvider profile={profile} customer={customer}>
+		<>
 			<main className="pb-10">
 				<Container className="max-w-6xl pb-6 pt-0 sm:py-10">
 					<div className="flex flex-col">
@@ -103,6 +93,6 @@ export default async function BusinessBookingPage({ params }: Props) {
 			</main>
 
 			<MobileBookingBar profile={profile} />
-		</BookingProvider>
+		</>
 	);
 }

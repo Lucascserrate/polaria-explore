@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { booking } from '@/content/booking';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,6 @@ import type {
 	PublicStaff,
 } from '@/services/booking/types';
 import type { CustomerSession } from '@/services/customer/types';
-import { saveCustomerPhone } from '@/services/customer/phone';
 import { AnyStaffAvatar, StaffAvatar } from './StaffAvatar';
 
 /**
@@ -37,10 +35,7 @@ type Handlers = {
 	onSelectStaff: (staff: PublicStaff | null) => void;
 	onSelectDate: (date: string) => void;
 	onSelectSlot: (slot: PublicSlot) => void;
-	/** El teléfono se guardó en la cuenta: la sesión ya sirve para reservar. */
-	onSessionChange: (session: CustomerSession) => void;
 	onConfirm: () => void;
-	onClose: () => void;
 };
 
 /** Fila tocable: la unidad de todas las listas del flujo. */
@@ -264,67 +259,27 @@ export function SlotStep({
 	);
 }
 
-export function DetailsStep({
-	profile,
-	state,
-	onSessionChange,
-	onConfirm,
-}: {
-	profile: PublicBusinessProfile;
-	state: BookingFlowState;
-	onSessionChange: Handlers["onSessionChange"];
-	onConfirm: Handlers["onConfirm"];
-}) {
-	/*
-	 * Tres estados, en el orden en que los ve una persona nueva: no inició
-	 * sesión, inició pero no dio su teléfono, y listo para confirmar. El tercero
-	 * es el único que ve quien ya reservó antes en cualquier negocio de Polaria,
-	 * y para esa persona este paso es un botón.
-	 */
-	if (!state.session) return <SignInStep />;
-
-	if (!state.session.phone) {
-		return (
-			<PhoneStep
-				profile={profile}
-				onSaved={onSessionChange}
-			/>
-		);
-	}
-
-	return (
-		<ConfirmStep
-			profile={profile}
-			session={state.session}
-			submitting={state.submitting}
-			onConfirm={onConfirm}
-		/>
-	);
-}
-
 /**
  * Iniciar sesión, que reemplazó al formulario de nombre y teléfono.
  *
- * Es un enlace y no un `fetch`: iniciar sesión con Google es una navegación del
- * navegador —sale del sitio, pasa por Google y vuelve—, y el destino es una ruta
- * de este mismo sitio para no escribir la dirección de la API en el HTML. Ver
+ * Es un enlace y no un `fetch`: entrar con Google es una navegación —sale del
+ * sitio, pasa por Google y vuelve—, y el destino es una ruta de este mismo
+ * sitio para no escribir la dirección de la API en el HTML. Ver
  * `app/api/customer/login`.
  *
- * El `returnTo` es la página del negocio donde está reservando, así que al
- * volver sigue viendo lo mismo. Lo que **no** sobrevive al viaje es el paso en
- * el que estaba: al volver tiene que elegir servicio y horario otra vez. Es la
- * arruga conocida de esta primera versión y se arregla guardando el flujo antes
- * de salir; no se hizo todavía porque el caso que importa —quien ya tiene
- * cuenta— nunca pasa por acá.
+ * El `returnTo` es la dirección actual **con sus parámetros**, que es lo que
+ * hace que al volver el flujo siga en el mismo paso, con el servicio, el
+ * profesional y el horario ya elegidos. Era justamente lo que se perdía cuando
+ * esto era un modal.
  */
-function SignInStep() {
+export function SignInStep() {
 	const returnTo =
-		typeof window === "undefined"
-			? "/"
+		typeof window === 'undefined'
+			? '/'
 			: `${window.location.pathname}${window.location.search}`;
 
 	return (
-		<div className="space-y-5">
+		<div className="max-w-lg space-y-5">
 			<p className="text-ink-600">{booking.flow.identity.why}</p>
 
 			<Button
@@ -342,113 +297,51 @@ function SignInStep() {
 	);
 }
 
-/**
- * El teléfono: lo único que Google no entrega.
- *
- * Se pide una sola vez en la vida de la cuenta, y por eso el texto dice para qué
- * es: es el número al que llega la confirmación y el recordatorio, no un dato de
- * registro. El prefijo se muestra al costado y no se escribe —es el del país del
- * negocio—, y quien tenga un número de otro país puede escribirlo completo con
- * `+`: eso lo resuelve el backend, que es el único que normaliza teléfonos.
- */
-function PhoneStep({
-	profile,
-	onSaved,
-}: {
-	profile: PublicBusinessProfile;
-	onSaved: (session: CustomerSession) => void;
-}) {
-	const [phone, setPhone] = useState("");
-	const [saving, setSaving] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-
-	const submit = async (event: React.FormEvent) => {
-		event.preventDefault();
-		if (!phone.trim() || saving) return;
-
-		setSaving(true);
-		setError(null);
-
-		try {
-			onSaved(
-				await saveCustomerPhone({
-					phone: phone.trim(),
-					timezone: profile.timezone,
-				}),
-			);
-		} catch (cause) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: "No pudimos guardar el número. Probá de nuevo.",
-			);
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	return (
-		<form className="space-y-5" onSubmit={submit}>
-			<p className="text-ink-600">{booking.flow.phoneStep.subtitle}</p>
-
-			<Field
-				id="customer-phone"
-				label={booking.flow.phoneStep.label}
-				hint={booking.flow.details.phoneHint}
-				error={error ?? undefined}
-			>
-				<div className="flex items-stretch gap-2">
-					<span className="flex shrink-0 items-center rounded-xl bg-paper-200 px-3 text-sm text-ink-600 tabular-nums">
-						+{profile.dialCode}
-					</span>
-					<input
-						id="customer-phone"
-						value={phone}
-						onChange={(event) => setPhone(event.target.value)}
-						placeholder={booking.flow.details.phonePlaceholder}
-						inputMode="tel"
-						autoComplete="tel"
-						autoFocus
-						className={cn(inputClasses, "flex-1")}
-					/>
-				</div>
-			</Field>
-
-			<Button type="submit" size="lg" className="w-full" disabled={saving}>
-				{saving
-					? booking.flow.phoneStep.saving
-					: booking.flow.phoneStep.submit}
-			</Button>
-		</form>
-	);
-}
-
 /** Con cuenta y teléfono, reservar es leer y apretar un botón. */
-function ConfirmStep({
+export function ConfirmStep({
 	profile,
 	session,
 	submitting,
+	askingPhone,
+	onAskPhone,
 	onConfirm,
 }: {
 	profile: PublicBusinessProfile;
 	session: CustomerSession;
 	submitting: boolean;
+	/** El diálogo del teléfono está abierto encima de esta pantalla. */
+	askingPhone: boolean;
+	onAskPhone: () => void;
 	onConfirm: () => void;
 }) {
+	/*
+	 * Sin teléfono no se puede reservar, y quien cerró el diálogo tiene que poder
+	 * volver a abrirlo desde acá. Mientras está abierto no se dibuja nada: un
+	 * botón detrás de un modal es un botón que nadie puede apretar.
+	 */
+	if (!session.phone) {
+		return askingPhone ? null : (
+			<div className="max-w-lg space-y-4">
+				<p className="text-ink-600">{booking.flow.phoneStep.missing}</p>
+				<Button size="lg" className="w-full" onClick={onAskPhone}>
+					{booking.flow.phoneStep.title}
+				</Button>
+			</div>
+		);
+	}
+
 	return (
-		<div className="space-y-5">
+		<div className="max-w-lg space-y-5">
 			{/*
 			 * Los datos se muestran completos y no detrás de un "usar mi cuenta": el
 			 * número es por donde llega el recordatorio, así que quien lo cambió tiene
 			 * que poder verlo antes de confirmar y no cuando no le llega nada.
 			 */}
 			<div className="space-y-1 rounded-2xl bg-paper-200 px-5 py-4">
-				<p className="text-sm text-ink-600">
-					{booking.flow.details.bookingAs}
-				</p>
+				<p className="text-sm text-ink-600">{booking.flow.details.bookingAs}</p>
 				<p className="font-medium">{session.name}</p>
 				<p className="text-ink-700 tabular-nums">
-					{session.phone ? formatPhone(session.phone, profile.dialCode) : ""}
+					{formatPhone(session.phone, profile.dialCode)}
 				</p>
 			</div>
 
@@ -472,7 +365,7 @@ function ConfirmStep({
  * La cuenta lo guarda como lo guarda WhatsApp —dígitos con código de país y sin
  * `+`, `59170011223`— y eso no se le muestra así a nadie. Se le devuelve el `+`
  * y se separa el prefijo del negocio cuando coincide; si el número es de otro
- * país, se muestra completo, que es más honesto que partirlo por un prefijo que
+ * país se muestra completo, que es más honesto que partirlo por un prefijo que
  * no es el suyo.
  */
 function formatPhone(phone: string, dialCode: string): string {
@@ -484,11 +377,9 @@ function formatPhone(phone: string, dialCode: string): string {
 export function DoneStep({
 	profile,
 	state,
-	onClose,
 }: {
 	profile: PublicBusinessProfile;
 	state: BookingFlowState;
-	onClose: Handlers['onClose'];
 }) {
 	const { confirmation } = state;
 	if (!confirmation) return null;
@@ -496,7 +387,7 @@ export function DoneStep({
 	return (
 		<div className="space-y-6 text-center">
 			<div className="space-y-2">
-				<h3 className="text-2xl font-semibold">{booking.flow.done.title}</h3>
+				<h1 className="text-3xl font-semibold">{booking.flow.done.title}</h1>
 				<p className="text-ink-600">
 					{booking.flow.done.subtitle(profile.name)}
 				</p>
@@ -517,7 +408,16 @@ export function DoneStep({
 				)}
 			</div>
 
-			<Button size="lg" className="w-full" onClick={onClose}>
+			{/*
+			 * Terminar es volver a la página del negocio, no cerrar una ventana: el
+			 * flujo es una pantalla con dirección propia, así que dejar al cliente
+			 * acá con el turno hecho sería dejarlo en una calle sin salida.
+			 */}
+			<Button
+				size="lg"
+				className="w-full"
+				href={`/${encodeURIComponent(profile.slug)}`}
+			>
 				{booking.flow.done.close}
 			</Button>
 		</div>
@@ -525,38 +425,6 @@ export function DoneStep({
 }
 
 // ---------------------------------------------------------------------------
-
-const inputClasses =
-	'w-full rounded-xl bg-paper-100 px-4 py-3 text-ink-900 ring-1 ring-paper-300 ' +
-	'ring-inset outline-none placeholder:text-ink-500 focus:ring-2 focus:ring-accent-500';
-
-function Field({
-	id,
-	label,
-	hint,
-	error,
-	children,
-}: {
-	id: string;
-	label: string;
-	hint?: string;
-	error?: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="space-y-1.5">
-			<label htmlFor={id} className="block text-sm font-medium text-ink-700">
-				{label}
-			</label>
-			{children}
-			{error ? (
-				<p className="text-sm text-attention-700">{error}</p>
-			) : (
-				hint && <p className="text-sm text-ink-500">{hint}</p>
-			)}
-		</div>
-	);
-}
 
 function EmptyNote({ children }: { children: React.ReactNode }) {
 	return (

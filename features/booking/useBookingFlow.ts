@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { booking } from '@/content/booking';
+import { ANY_STAFF, BOOKING_PARAM } from './booking-url';
 import { BookingRequestError } from '@/services/booking/request';
 import { useCreateBooking } from '@/services/booking/hooks/useCreateBooking';
 import { useDays } from '@/services/booking/hooks/useDays';
@@ -18,41 +20,37 @@ import type {
 
 /**
  * El flujo de reserva, con los mismos pasos que la reserva guiada de WhatsApp:
- * servicio → profesional → fecha y hora → datos → listo.
+ * servicio → profesional → fecha y hora → confirmar.
  *
  * Que sean los mismos no es una coincidencia estética. Son los datos que el
  * backend necesita para reservar, en el orden en que dejan de ser ambiguos: sin
  * servicio no se sabe cuánto dura, sin duración no se sabe qué horarios entran,
  * y sin profesional no se sabe la agenda de quién mirar.
  *
- * **Dos pasos se saltean solos**, y ésa es la diferencia entre un formulario y
- * un flujo: el de servicio cuando se entra tocando "Reservar" en uno concreto,
- * y el de profesional cuando hay uno solo. Preguntar entre una única opción no
- * es una elección, es un toque de más.
- *
- * El hook no sabe nada de disponibilidad: pide y muestra. Qué horario existe lo
- * decide el backend, y el que se elige se revalida al confirmar.
- *
  * ---
  *
- * **Qué cambió al pasar a React Query.** Antes este archivo llevaba a mano un
- * `AbortController`, un `loading`, un `error` y las listas ya pedidas. Ahora
- * cada dato es una consulta de `services/booking/hooks/`, y lo que queda acá es
- * lo único que React Query no puede saber: en qué paso está la persona, qué
- * eligió y a dónde vuelve.
+ * **Lo elegido vive en la URL, no en memoria, y ésa es la decisión central.**
  *
- * De ahí salen dos consecuencias que valen la pena:
+ * Esto era un modal con `useState`, y funcionaba hasta que apareció el login:
+ * iniciar sesión con Google es salir del sitio, así que al volver el estado en
+ * memoria ya no existía y la persona aterrizaba en el paso uno después de haber
+ * elegido servicio, profesional y horario. Con todo en la URL, volver de Google
+ * es volver a la misma dirección y el flujo se reconstruye solo.
  *
- * 1. **La carrera desapareció en lugar de resolverse.** El riesgo era que la
- *    respuesta del primer día pisara la del tercero cuando alguien toca tres
- *    días seguidos. Con una clave por consulta eso no puede pasar: la pantalla
- *    lee la entrada del día que está marcado, y las demás se cancelan solas.
- * 2. **Casi todo el estado se deriva.** `days`, `slots`, `loading` y `error`
- *    salen de las consultas; no hay un `setState` que pueda quedar desfasado de
- *    lo que se está pidiendo.
+ * Trae tres cosas más, gratis: el "atrás" del navegador funciona, las migas de
+ * arriba son enlaces de verdad, y un paso se puede compartir por mensaje.
+ *
+ * **El paso no se guarda: se deriva de lo que falta.** No hay un `?paso=`, y no
+ * es casual: un paso guardado aparte puede contradecir a los datos —estar en
+ * "elegí hora" sin servicio— y entonces hay que decidir a cuál creerle. Si el
+ * paso es una función de lo elegido, ese estado imposible no existe.
+ *
+ * **Dos pasos se saltean solos**: el de servicio cuando se entra tocando
+ * "Reservar" en uno concreto, y el de profesional cuando hay uno solo.
+ * Preguntar entre una única opción no es una elección, es un toque de más.
  */
 
-export type BookingStep = 'service' | 'staff' | 'slot' | 'details' | 'done';
+export type BookingStep = 'service' | 'staff' | 'slot' | 'confirm' | 'done';
 
 /** Cuántos días ofrece el selector. Cuatro semanas alcanzan para una barbería. */
 const DAYS_AHEAD = 28;
@@ -67,10 +65,14 @@ const DAYS_AHEAD = 28;
  */
 const AUTO_ADVANCE_LIMIT = 3;
 
+export type BookingStepChanges = Partial<
+	Record<keyof typeof BOOKING_PARAM, string | null>
+>;
+
 export type BookingFlowState = {
 	step: BookingStep;
 	service: PublicService | null;
-	/** `null` estando el paso resuelto es "cualquier profesional". */
+	/** `null` con el paso resuelto es "cualquier profesional". */
 	staff: PublicStaff | null;
 	staffOptions: PublicStaff[];
 	days: string[];
@@ -81,20 +83,14 @@ export type BookingFlowState = {
 	/**
 	 * Quién está en sesión, o `null`.
 	 *
-	 * Llega resuelta del servidor y vive en el flujo porque cambia mientras el
-	 * flujo está abierto: al agregar el teléfono, la misma sesión pasa de "le
-	 * falta el número" a "lista para reservar" sin recargar la página.
-	 *
-	 * Reemplazó al nombre y el teléfono escritos a mano. Ya no hay formulario:
-	 * los datos de quien reserva salen de su cuenta, y el backend los toma de ahí
-	 * ignorando lo que mande el navegador.
+	 * Llega resuelta del servidor y vive acá porque cambia mientras la pantalla
+	 * está abierta: al agregar el teléfono, la misma sesión pasa de "le falta el
+	 * número" a "lista para reservar" sin recargar.
 	 */
 	session: CustomerSession | null;
 	loading: boolean;
 	submitting: boolean;
 	error: string | null;
-	/** Hay a dónde volver, o el paso actual es el primero que se mostró. */
-	canGoBack: boolean;
 };
 
 export function useBookingFlow(
@@ -103,31 +99,24 @@ export function useBookingFlow(
 	initialSession: CustomerSession | null,
 ) {
 	const slug = profile.slug;
+	const router = useRouter();
+	const params = useSearchParams();
 
-	const [open, setOpen] = useState(false);
-	const [history, setHistory] = useState<BookingStep[]>([]);
-	const [rawStep, setRawStep] = useState<BookingStep>('service');
-	const [service, setService] = useState<PublicService | null>(null);
-	const [slot, setSlot] = useState<PublicSlot | null>(null);
 	const [session, setSession] = useState(initialSession);
 
-	/**
-	 * La elección de profesional, separada en dos.
-	 *
-	 * `chosen` existe porque `null` es una respuesta válida —"cualquiera"— y no
-	 * se puede distinguir de "todavía no eligió" mirando sólo el valor.
-	 */
-	const [staffChoice, setStaffChoice] = useState<{
-		chosen: boolean;
-		value: PublicStaff | null;
-	}>({ chosen: false, value: null });
+	/* --- Lo elegido, leído de la URL --------------------------------------- */
 
-	/** El día que el cliente tocó. `null` = el flujo elige por él. */
-	const [manualDate, setManualDate] = useState<string | null>(null);
+	const serviceId = params.get(BOOKING_PARAM.service);
+	const staffParam = params.get(BOOKING_PARAM.staff);
+	const manualDate = params.get(BOOKING_PARAM.date);
+	const slotStart = params.get(BOOKING_PARAM.slot);
+
+	const service =
+		profile.services.find((option) => option.id === serviceId) ?? null;
 
 	/* --- Datos ------------------------------------------------------------- */
 
-	const staffQuery = useStaff(slug, open && service ? service.id : null);
+	const staffQuery = useStaff(slug, service ? service.id : null);
 	const staffOptions = staffQuery.data ?? [];
 
 	/**
@@ -135,25 +124,38 @@ export function useBookingFlow(
 	 *
 	 * Es el caso del barbero que trabaja solo, para quien un paso de "elegí
 	 * profesional" con una única tarjeta sería un trámite. Se deriva de la
-	 * consulta en lugar de navegar desde un efecto: así el paso nunca llega a
-	 * pintarse con una sola opción y no queda un "Volver" que lleva a una
-	 * pregunta sin respuestas posibles.
+	 * consulta y no se escribe en la URL: escribirlo obligaría a navegar desde un
+	 * efecto, y el paso llegaría a pintarse con una sola opción antes de
+	 * saltearse.
 	 */
 	const autoResolvedStaff = staffQuery.isSuccess && staffOptions.length <= 1;
-	const staff = staffChoice.chosen
-		? staffChoice.value
-		: (autoResolvedStaff ? (staffOptions[0] ?? null) : null);
-	const staffSettled = staffChoice.chosen || autoResolvedStaff;
 
-	const step: BookingStep =
-		rawStep === 'staff' && autoResolvedStaff ? 'slot' : rawStep;
+	const staffChosen = staffParam !== null;
+	const staff = staffChosen
+		? (staffOptions.find((option) => option.id === staffParam) ?? null)
+		: autoResolvedStaff
+			? (staffOptions[0] ?? null)
+			: null;
 
-	const onSlotStep = open && step === 'slot' && service !== null && staffSettled;
+	/*
+	 * El profesional de la URL puede no estar en la lista: el enlace es viejo, o
+	 * el negocio lo dio de baja. `cualquiera` vale siempre; un id que no existe
+	 * se trata como "no eligió" y se vuelve a preguntar, que es mejor que
+	 * reservar con alguien que no atiende ese servicio.
+	 */
+	const staffSettled =
+		autoResolvedStaff ||
+		staffParam === ANY_STAFF ||
+		(staffChosen && staff !== null);
+
 	const serviceParams = service
 		? { serviceId: service.id, staffId: staff?.id }
 		: null;
 
-	const daysQuery = useDays(slug, onSlotStep ? serviceParams : null);
+	const daysQuery = useDays(
+		slug,
+		service && staffSettled ? serviceParams : null,
+	);
 	const days = (daysQuery.data ?? []).slice(0, DAYS_AHEAD);
 
 	/**
@@ -165,11 +167,13 @@ export function useBookingFlow(
 	 * — sin esto, abrir la reserva en un negocio lleno empieza con un "no quedan
 	 * horarios" aunque haya turnos pasado mañana.
 	 */
-	const candidates = manualDate ? [manualDate] : days.slice(0, AUTO_ADVANCE_LIMIT);
+	const candidates = manualDate
+		? [manualDate]
+		: days.slice(0, AUTO_ADVANCE_LIMIT);
 
 	const slotsQuery = useSlots(
 		slug,
-		onSlotStep && serviceParams && candidates.length > 0
+		service && staffSettled && serviceParams && candidates.length > 0
 			? { ...serviceParams, candidates }
 			: null,
 	);
@@ -181,99 +185,109 @@ export function useBookingFlow(
 	 * horarios de otra".
 	 */
 	const date = slotsQuery.data?.date ?? manualDate ?? days[0] ?? null;
-	const slots = slotsQuery.data?.slots ?? [];
+
+	/*
+	 * `useMemo` para que la lista vacía no sea un arreglo nuevo en cada render:
+	 * de eso depende que el horario elegido no se recalcule —y la función de
+	 * confirmar no cambie de identidad— cada vez que algo se vuelve a dibujar.
+	 */
+	const slots = useMemo(
+		() => slotsQuery.data?.slots ?? [],
+		[slotsQuery.data?.slots],
+	);
+
+	/*
+	 * El horario de la URL se toma tal cual y no se exige encontrarlo en `slots`:
+	 * la lista puede estar viajando, o el horario puede haberse ocupado mientras
+	 * la persona iniciaba sesión. En los dos casos hay que llegar a "confirmar" y
+	 * dejar que el backend revalide —perder lo elegido por un refresco de la
+	 * lista sería peor que un 409 con su mensaje—.
+	 */
+	const slot: PublicSlot | null = useMemo(
+		() =>
+			slotStart
+				? (slots.find((option) => option.startTime === slotStart) ?? {
+						startTime: slotStart,
+						endTime: slotStart,
+					})
+				: null,
+		[slotStart, slots],
+	);
 
 	const create = useCreateBooking(slug);
 
-	/* --- Navegación -------------------------------------------------------- */
+	/* --- El paso, derivado ------------------------------------------------- */
 
-	const goTo = useCallback(
-		(next: BookingStep) => {
+	const step: BookingStep = create.data
+		? 'done'
+		: !service
+			? 'service'
+			: !staffSettled
+				? 'staff'
+				: !slot
+					? 'slot'
+					: 'confirm';
+
+	/* --- Navegación: escribir en la URL ------------------------------------ */
+
+	/**
+	 * Avanzar es navegar. `push` y no `replace`: cada paso es una entrada del
+	 * historial, y por eso el "atrás" del navegador y el gesto de volver del
+	 * teléfono hacen lo que la gente espera sin programar nada.
+	 *
+	 * `scroll: false` porque el alto no cambia entre pasos y un salto al tope en
+	 * cada toque se siente como una recarga.
+	 */
+	const navigate = useCallback(
+		(changes: BookingStepChanges) => {
+			const next = new URLSearchParams(params.toString());
+
+			for (const [key, value] of Object.entries(changes)) {
+				const name = BOOKING_PARAM[key as keyof typeof BOOKING_PARAM];
+				if (value === null) next.delete(name);
+				else next.set(name, value);
+			}
+
 			create.reset();
-			setHistory((current) => [...current, next]);
-			setRawStep(next);
+			router.push(`?${next.toString()}`, { scroll: false });
 		},
-		[create],
+		[create, params, router],
 	);
 
-	const start = useCallback(
-		(from?: PublicService) => {
-			create.reset();
-			setSlot(null);
-			setManualDate(null);
-			setStaffChoice({ chosen: false, value: null });
-			setOpen(true);
-
-			// Entrando por "Reservar" de un servicio concreto, ese paso ya está
-			// contestado y el historial arranca en el de profesional: no hay a dónde
-			// volver.
-			setService(from ?? null);
-			setHistory([from ? 'staff' : 'service']);
-			setRawStep(from ? 'staff' : 'service');
-		},
-		[create],
-	);
-
-	const close = useCallback(() => setOpen(false), []);
-
-	const back = useCallback(() => {
-		// El primer paso mostrado no tiene atrás: ahí "Volver" es cerrar.
-		if (history.length <= 1) {
-			setOpen(false);
-			return;
-		}
-
-		create.reset();
-		setSlot(null);
-		setHistory((current) => {
-			const next = current.slice(0, -1);
-			setRawStep(next[next.length - 1]);
-			return next;
-		});
-	}, [create, history.length]);
-
-	/* --- Elecciones -------------------------------------------------------- */
-
+	/*
+	 * Elegir algo borra lo que venía después. No es prolijidad: el horario de las
+	 * tres existía para el servicio de media hora con Fernando, y quien cambia de
+	 * servicio o de profesional está preguntando otra cosa. Sin este borrado, la
+	 * URL quedaría con un horario que la combinación nueva quizá no ofrece.
+	 */
 	const selectService = useCallback(
-		(next: PublicService) => {
-			setService(next);
-			setStaffChoice({ chosen: false, value: null });
-			setManualDate(null);
-			setSlot(null);
-			goTo('staff');
-		},
-		[goTo],
+		(next: PublicService) =>
+			navigate({ service: next.id, staff: null, date: null, slot: null }),
+		[navigate],
 	);
 
 	const selectStaff = useCallback(
-		(next: PublicStaff | null) => {
-			setStaffChoice({ chosen: true, value: next });
-			setManualDate(null);
-			setSlot(null);
-			goTo('slot');
-		},
-		[goTo],
+		(next: PublicStaff | null) =>
+			navigate({ staff: next?.id ?? ANY_STAFF, date: null, slot: null }),
+		[navigate],
 	);
 
-	const selectDate = useCallback((next: string) => {
-		setManualDate(next);
-		setSlot(null);
-	}, []);
+	const selectDate = useCallback(
+		(next: string) => navigate({ date: next, slot: null }),
+		[navigate],
+	);
 
 	const selectSlot = useCallback(
-		(next: PublicSlot) => {
-			setSlot(next);
-			goTo('details');
-		},
-		[goTo],
+		(next: PublicSlot) => navigate({ slot: next.startTime }),
+		[navigate],
 	);
 
 	/**
 	 * La sesión cambió sin recargar: se acaba de guardar el teléfono.
 	 *
 	 * Es lo que permite que el paso siguiente sea confirmar y no volver a pedir
-	 * el número. La fuente sigue siendo el servidor; esto solo adelanta lo que
-	 * la próxima carga va a decir igual.
+	 * el número. La fuente sigue siendo el servidor; esto sólo adelanta lo que la
+	 * próxima carga va a decir igual.
 	 */
 	const updateSession = useCallback(
 		(next: CustomerSession) => setSession(next),
@@ -284,41 +298,15 @@ export function useBookingFlow(
 	 * Confirma la reserva. No lleva datos de quien reserva: los toma la API de la
 	 * sesión, que es la única fuente que no se puede falsear desde el navegador.
 	 */
-	const confirm = useCallback(
-		async () => {
-			if (!service || !slot) return;
+	const confirm = useCallback(() => {
+		if (!service || !slot) return;
 
-			create.mutate(
-				{
-					serviceId: service.id,
-					staffId: staff?.id,
-					startTime: slot.startTime,
-				},
-				{
-					onSuccess: () => {
-						setHistory((current) => [...current, 'done']);
-						setRawStep('done');
-					},
-					onError: (error) => {
-						/*
-						 * Perder el horario no es un error del formulario: entre que se
-						 * mostró la lista y el cliente terminó de escribir su nombre, otro
-						 * lo tomó. Se lo devuelve al paso de horarios —sin el paso de datos
-						 * en el historial, para que "Volver" no lo traiga de nuevo acá— y
-						 * la lista se recarga sola, porque la mutación invalida los
-						 * horarios del negocio pase lo que pase.
-						 */
-						if (error instanceof BookingRequestError && error.isSlotTaken) {
-							setSlot(null);
-							setHistory((current) => current.filter((s) => s !== 'details'));
-							setRawStep('slot');
-						}
-					},
-				},
-			);
-		},
-		[create, service, slot, staff],
-	);
+		create.mutate({
+			serviceId: service.id,
+			staffId: staff?.id,
+			startTime: slot.startTime,
+		});
+	}, [create, service, slot, staff]);
 
 	/* --- Lo que ve la pantalla --------------------------------------------- */
 
@@ -329,10 +317,6 @@ export function useBookingFlow(
 				? daysQuery.isLoading || slotsQuery.isLoading
 				: false;
 
-	/*
-	 * El error del paso en el que está la persona, y sólo ése. Uno de un paso que
-	 * ya quedó atrás no tiene nada que decirle a la pantalla que está mirando.
-	 */
 	const stepError =
 		step === 'staff'
 			? staffQuery.error
@@ -341,7 +325,6 @@ export function useBookingFlow(
 				: null;
 
 	return {
-		open,
 		state: {
 			step,
 			service,
@@ -356,11 +339,7 @@ export function useBookingFlow(
 			loading,
 			submitting: create.isPending,
 			error: messageOf(create.error) ?? messageOf(stepError),
-			canGoBack: history.length > 1,
 		} satisfies BookingFlowState,
-		start,
-		close,
-		back,
 		selectService,
 		selectStaff,
 		selectDate,

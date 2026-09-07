@@ -93,6 +93,36 @@ export const booking = {
 		close: 'Cerrar',
 		back: 'Volver',
 
+		/**
+		 * Los nombres de los pasos, para las migas de arriba.
+		 *
+		 * Sustantivos y no órdenes —"Profesional", no "Elegí un profesional"—:
+		 * arriba son un mapa de dónde está la persona, y el título grande de la
+		 * pantalla es el que pide algo. Las dos cosas en imperativo se leerían como
+		 * dos instrucciones distintas para el mismo paso.
+		 */
+		steps: {
+			label: 'Pasos de la reserva',
+			service: 'Servicio',
+			staff: 'Profesional',
+			slot: 'Hora',
+			confirm: 'Confirmar',
+		},
+
+		/**
+		 * El título de la pantalla en cada paso. Es lo que se pide, en imperativo.
+		 *
+		 * Están juntos y no dentro de cada paso porque ahora los dibuja la pantalla
+		 * y no cada componente: un solo lugar donde ver que los cuatro se leen como
+		 * una misma voz.
+		 */
+		titles: {
+			service: 'Elegí un servicio',
+			staff: 'Elegí un profesional',
+			slot: 'Elegí fecha y hora',
+			confirm: 'Confirmá tu reserva',
+		},
+
 		service: {
 			title: 'Elegí un servicio',
 		},
@@ -142,6 +172,9 @@ export const booking = {
 			label: 'Número de teléfono',
 			submit: 'Continuar',
 			saving: 'Guardando…',
+			/** Cuando cerró el diálogo sin dar el número y quiere confirmar. */
+			missing:
+				'Necesitamos tu número para mandarte la confirmación y el recordatorio.',
 		},
 
 		details: {
@@ -159,6 +192,7 @@ export const booking = {
 		},
 
 		summary: {
+			total: 'Total',
 			/** Lo elegido, siempre a la vista mientras se completa el resto. */
 			with: (staffName: string) => `Con ${staffName}`,
 			anyStaff: 'Cualquier profesional',
