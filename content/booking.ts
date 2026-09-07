@@ -36,6 +36,17 @@ export const booking = {
 		unknown: 'Consultá los horarios',
 	},
 
+	gallery: {
+		seeAll: 'Ver todas las imágenes',
+		open: 'Ver la foto más grande',
+		close: 'Cerrar',
+		previous: 'Foto anterior',
+		next: 'Foto siguiente',
+		counter: (current: number, total: number) => `${current}/${total}`,
+		photoAlt: (name: string, index: number, total: number) =>
+			`Foto ${index} de ${total} de ${name}`,
+	},
+
 	services: {
 		title: 'Servicios',
 		empty:

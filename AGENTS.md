@@ -105,7 +105,18 @@ services/booking/
 - **No hay lógica de reservas acá.** Disponibilidad, asignación de profesional y
   creación de la cita las resuelve la API de Polaria, que es la misma que atiende
   WhatsApp y el panel. Si aparece un cálculo de horarios en este repo, está mal.
-- **Sin fotos, y sin huecos de fotos.**
+- **Las fotos son opcionales, y sin fotos no hay hueco.** La galería
+  (`BusinessGallery`) no dibuja nada cuando el negocio no subió ninguna, que es
+  el caso de casi todos: la página tiene que verse terminada así. Las sube el
+  dueño desde el panel (Configuración → Fotos del negocio), viven en Cloudinary
+  y llegan en `profile.photos`, en orden y con sus medidas —que es lo que evita
+  que la página salte mientras cargan—. La primera es la portada.
+- **La galería es la única parte cliente de la página**, junto al flujo de
+  reserva. Necesita el índice actual del carrusel y las teclas del visor; el
+  HTML igual llega con todas las fotos, así que sin JavaScript se ven y se
+  desplazan con el dedo. Tiene dos formas —carrusel a sangre en el teléfono,
+  grilla de portada más dos en escritorio— y **nunca** se avanza con la rueda
+  del mouse: hay clientes cuyo mouse no la tiene.
 - **El mapa de "Dónde estamos" es una imagen, no un mapa arrastrable.** Sale de
   la API de imágenes estáticas de Mapbox (`services/map/static-map.ts`) y la pide
   el servidor en `app/api/map/[slug]`. Dos razones: cero JavaScript en una página

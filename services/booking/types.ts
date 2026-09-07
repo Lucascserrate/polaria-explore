@@ -9,38 +9,45 @@
  */
 
 export type BusinessStatus =
-  | { open: true; closesAt: string }
-  | {
-      open: false;
-      opensAt: {
-        /** 0 = domingo. */
-        dayOfWeek: number;
-        /** `HH:MM` en la zona del negocio. */
-        time: string;
-        /** 0 = hoy más tarde, 1 = mañana. Decide cómo se nombra el día. */
-        daysAhead: number;
-      } | null;
-    };
+	| { open: true; closesAt: string }
+	| {
+			open: false;
+			opensAt: {
+				/** 0 = domingo. */
+				dayOfWeek: number;
+				/** `HH:MM` en la zona del negocio. */
+				time: string;
+				/** 0 = hoy más tarde, 1 = mañana. Decide cómo se nombra el día. */
+				daysAhead: number;
+			} | null;
+	  };
 
 export type WeeklyRange = {
-  /** 0 = domingo. */
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+	/** 0 = domingo. */
+	dayOfWeek: number;
+	startTime: string;
+	endTime: string;
 };
 
 export type PublicService = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  durationMinutes: number;
+	id: string;
+	name: string;
+	description: string | null;
+	price: number;
+	durationMinutes: number;
 };
 
 export type PublicStaff = {
-  id: string;
-  name: string;
-  jobTitle: string | null;
+	id: string;
+	name: string;
+	jobTitle: string | null;
+};
+
+export type PublicPhoto = {
+	id: string;
+	url: string;
+	width: number;
+	height: number;
 };
 
 /**
@@ -49,42 +56,43 @@ export type PublicStaff = {
  * servidor al confirmar.
  */
 export type PublicSlot = {
-  startTime: string;
-  endTime: string;
+	startTime: string;
+	endTime: string;
 };
 
 export type PublicBusinessProfile = {
-  slug: string;
-  name: string;
-  businessType: string | null;
-  timezone: string;
-  /** ISO 4217. Los precios se formatean con esto, no con una moneda fija. */
-  currency: string;
-  /** Prefijo telefónico sugerido en el formulario, sin `+`. */
-  dialCode: string;
-  address: string | null;
-  location: { latitude: number; longitude: number } | null;
-  status: BusinessStatus;
-  businessHours: WeeklyRange[];
-  services: PublicService[];
+	slug: string;
+	name: string;
+	businessType: string | null;
+	photos: PublicPhoto[];
+	timezone: string;
+	/** ISO 4217. Los precios se formatean con esto, no con una moneda fija. */
+	currency: string;
+	/** Prefijo telefónico sugerido en el formulario, sin `+`. */
+	dialCode: string;
+	address: string | null;
+	location: { latitude: number; longitude: number } | null;
+	status: BusinessStatus;
+	businessHours: WeeklyRange[];
+	services: PublicService[];
 };
 
 export type PublicBookingConfirmation = {
-  id: string;
-  startTime: string;
-  endTime: string;
-  serviceName: string;
-  staffName: string | null;
-  price: number;
-  durationMinutes: number;
+	id: string;
+	startTime: string;
+	endTime: string;
+	serviceName: string;
+	staffName: string | null;
+	price: number;
+	durationMinutes: number;
 };
 
 /** Lo que la página manda para crear la reserva. */
 export type CreateBookingInput = {
-  serviceId: string;
-  /** Ausente es "cualquier profesional". */
-  staffId?: string;
-  startTime: string;
-  customerName: string;
-  customerPhone: string;
+	serviceId: string;
+	/** Ausente es "cualquier profesional". */
+	staffId?: string;
+	startTime: string;
+	customerName: string;
+	customerPhone: string;
 };
