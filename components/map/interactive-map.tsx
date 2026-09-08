@@ -89,6 +89,32 @@ export function InteractiveMap({
 	children?: ReactNode;
 }) {
 	const mapRef = useRef<MapRef | null>(null);
+	const boxRef = useRef<HTMLDivElement | null>(null);
+
+	/**
+	 * Volver a medir el contenedor cuando cambia de tamaño.
+	 *
+	 * Mapbox mide una sola vez, al montar, y después sólo escucha el `resize` de
+	 * la ventana. Alcanza mientras el mapa esté a la vista desde el principio;
+	 * no alcanza acá, donde el panel se muestra y se esconde con CSS: si el mapa
+	 * se monta dentro de un contenedor en `display: none` —que es lo que pasa en
+	 * el teléfono, donde la lista abre primero— el lienzo nace con la medida
+	 * equivocada y se queda así. Se ve como un mapa recortado, con franjas
+	 * blancas al costado y abajo, sin ningún error en la consola.
+	 *
+	 * Un `ResizeObserver` también cubre lo que la ventana no avisa: el panel que
+	 * pasa de media pantalla a pantalla completa, y el que vuelve de estar
+	 * escondido.
+	 */
+	useEffect(() => {
+		const box = boxRef.current;
+		if (!box || typeof ResizeObserver === 'undefined') return;
+
+		const observer = new ResizeObserver(() => mapRef.current?.resize());
+		observer.observe(box);
+
+		return () => observer.disconnect();
+	}, []);
 
 	useEffect(() => {
 		if (!flyTo) return;
@@ -119,7 +145,7 @@ export function InteractiveMap({
 	 * forma —la página no salta cuando falta la credencial—.
 	 */
 	return (
-		<div className={className}>
+		<div ref={boxRef} className={className}>
 			<Map
 				ref={mapRef}
 				mapboxAccessToken={MAPBOX_PUBLIC_TOKEN}

@@ -192,3 +192,18 @@
 .explore-popup .mapboxgl-popup-tip {
 	display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Los botones de zoom, sólo en escritorio
+
+   En el teléfono el mapa ocupa la pantalla entera y se acerca con dos dedos,
+   así que los botones no agregan nada y sí quitan: caen justo donde va el botón
+   de volver a la lista, y quedan uno encima del otro. Con mouse son la vía
+   principal —hay gente cuyo mouse no tiene rueda—, así que ahí se quedan.
+--------------------------------------------------------------------------- */
+
+@media (width < 64rem) {
+	.explore-map .mapboxgl-ctrl-top-right {
+		display: none;
+	}
+}

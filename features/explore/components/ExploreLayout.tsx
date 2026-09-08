@@ -144,15 +144,25 @@ export function ExploreLayout({
 					 */
 					<div
 						className={cn(
-							'relative h-[calc(100dvh-4rem)] w-full shrink-0 sm:h-[calc(100dvh-4.5rem)] lg:sticky lg:top-18 lg:flex-1 lg:p-3 lg:pl-0',
+							/*
+							 * Alto: la pantalla entera en el teléfono, donde el buscador no
+							 * dibuja la barra de Polaria (ver `app/explore/layout.tsx`), y
+							 * la pantalla menos la barra en escritorio, donde sí está.
+							 */
+							'relative h-dvh w-full shrink-0 lg:sticky lg:top-18 lg:h-[calc(100dvh-4.5rem)] lg:flex-1 lg:p-3 lg:pl-0',
 							openNarrow ? 'block' : 'hidden',
 							openWide ? 'lg:block' : 'lg:hidden',
 						)}
 					>
+						{/*
+						  `explore-map` es para el CSS que esconde los botones de zoom de
+						  Mapbox en el teléfono, donde caen justo debajo del botón de
+						  volver a la lista. Ver `globals.css`.
+						*/}
 						<ExploreMap
 							businesses={located}
 							view={view}
-							className="size-full overflow-hidden lg:rounded-2xl"
+							className="explore-map size-full overflow-hidden lg:rounded-2xl"
 						/>
 
 						{/*
@@ -163,7 +173,7 @@ export function ExploreLayout({
 							type="button"
 							onClick={() => setChoice(false)}
 							aria-label={explore.map.backToList}
-							className="absolute top-3 right-3 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-paper-50 text-ink-900 shadow-md ring-1 ring-paper-300 lg:hidden"
+							className="absolute top-4 right-4 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-paper-50 text-ink-900 shadow-md ring-1 ring-paper-300 lg:hidden"
 						>
 							<List aria-hidden className="size-5" strokeWidth={1.75} />
 						</button>

@@ -17,10 +17,18 @@ no hay nada que venderle. Si estás por escribir copy que le habla a un negocio
 sobre software, estás en el repositorio equivocado.
 
 **Polaria sí se muestra, pero como marketplace y no como software.** La barra
-de arriba (`components/layout/navbar.tsx`, en el layout raíz) comparte la forma
-con la de `polaria-landing` —misma marca, misma altura, misma línea de 1px— y
-no su contenido: el logo lleva a la raíz, que va a ser el buscador, y a la
-derecha va la cuenta de quien reserva cuando hay sesión. Nada más.
+de arriba (`components/layout/navbar.tsx`) comparte la forma con la de
+`polaria-landing` —misma marca, misma altura, misma línea de 1px— y no su
+contenido: el logo lleva a la raíz y a la derecha va la cuenta de quien reserva
+cuando hay sesión. Nada más.
+
+**La barra no está en el layout raíz**, aunque sea del dominio y no de una
+pantalla. Vivía ahí hasta que apareció el buscador, que la quiere sólo en
+escritorio —en el teléfono el mapa ocupa la pantalla entera y la barra le come
+el alto—, y un layout no puede tener dos formas según quién cuelgue de él.
+Ahora la pone `app/(site)/layout.tsx` para la raíz y las reservas, y
+`app/explore/layout.tsx` escondida bajo `lg`. El documento (`app/layout.tsx`)
+no impone ningún encabezado.
 
 Lo que sigue prohibido es lo de siempre, y es la parte que importa: ningún
 enlace ni botón que le hable al dueño de un negocio. Un "Probá Polaria gratis"
@@ -121,7 +129,7 @@ services/booking/
   vive cinco minutos.
 - **Una clave por consulta reemplaza al `AbortController`.** El riesgo de que la
   respuesta de un día pise la de otro no se resuelve: deja de existir.
-- **El `QueryClientProvider` sólo envuelve `app/(booking)`**
+- **El `QueryClientProvider` sólo envuelve `app/(site)/(booking)`**
   (`components/providers/query-provider.tsx`).
 
 ## La página de reservas
@@ -138,7 +146,7 @@ services/booking/
   y llegan en `profile.photos`, en orden y con sus medidas —que es lo que evita
   que la página salte mientras cargan—. La primera es la portada.
 - **La vista previa del enlace es la portada del negocio.**
-  `app/(booking)/[businessSlug]/opengraph-image.tsx` dibuja un PNG de 1200×630
+  `app/(site)/(booking)/[businessSlug]/opengraph-image.tsx` dibuja un PNG de 1200×630
   con `profile.photos[0]` de fondo y el nombre y la dirección encima; sin fotos
   queda la tarjeta negra con las iniciales, que también es una vista previa
   terminada. Ahí no va el estado de apertura: WhatsApp cachea la imagen durante
@@ -209,13 +217,24 @@ services/booking/
   la función. Usa `NEXT_PUBLIC_MAPBOX_TOKEN`, que viaja al navegador y tiene que
   estar restringido por dominio. Sin negocios con coordenadas no hay mapa ni
   botón: un mapa sin marcadores es media pantalla que no sirve para nada.
+- **El panel del mapa se muestra y se esconde con CSS, así que el mapa se monta
+  escondido.** Mapbox mide el contenedor una sola vez y después sólo escucha el
+  `resize` de la ventana: sin el `ResizeObserver` de `InteractiveMap`, el mapa
+  del teléfono nace con la medida de un contenedor en `display: none` y se ve
+  recortado, con franjas blancas y sin ningún error en la consola.
+- **El marcador es un círculo con el icono del rubro**, no una gota ni una
+  burbuja con texto: hay veinte a la vez y lo que tiene que poder leerse debajo
+  son las calles. Tocarlo abre la vista previa del negocio —un globo pegado al
+  marcador en escritorio, una tarjeta al pie en el teléfono— y se dibuja **una**
+  de las dos, elegida con `useMediaQuery`: dibujar las dos y esconder una
+  dejaría la misma tarjeta dos veces en el HTML.
 - **Los iconos de rubro son de `lucide-react`**, la misma librería que el panel.
   Nunca reemplazan a la etiqueta: ninguno de esos dibujos dice "depilación" solo.
 
 ## Reglas del proyecto
 
-- **`app/(booking)/[businessSlug]/page.tsx` no lleva copy.** Sólo ordena la
-  página.
+- **`app/(site)/(booking)/[businessSlug]/page.tsx` no lleva copy.** Sólo ordena
+  la página.
 - **Todo el copy vive en `content/`.** Si estás escribiendo texto visible dentro
   de un `.tsx`, está en el lugar equivocado.
 - **Server Components por defecto.**
