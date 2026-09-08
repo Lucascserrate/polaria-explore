@@ -62,24 +62,32 @@ arreglar para levantar el sitio**, y en desarrollo se puede trabajar sin él.
 
 ## Mapa de rutas
 
-| Ruta               | Estado      | Quién la lee                     |
-| ------------------ | ----------- | -------------------------------- |
-| `/`                | provisional | Un cartel. Va a ser el buscador. |
-| `/[businessSlug]`  | en pie      | **El cliente de ese negocio**    |
-| `/api/booking/...` | en pie      | Nadie: pasamanos hacia la API    |
-| `/api/map/[slug]`  | en pie      | Nadie: la imagen del mapa        |
+| Ruta               | Estado      | Quién la lee                        |
+| ------------------ | ----------- | ----------------------------------- |
+| `/`                | provisional | Un cartel. Va a ser la entrada.     |
+| `/explore`         | en pie      | **Quien todavía no eligió negocio** |
+| `/[businessSlug]`  | en pie      | **El cliente de ese negocio**       |
+| `/api/booking/...` | en pie      | Nadie: pasamanos hacia la API       |
+| `/api/map/[slug]`  | en pie      | Nadie: la imagen del mapa           |
 
 `app/page.tsx` es un cartel provisional, no una landing: existe para que la raíz
 del dominio no sea un 404 —las páginas de reserva cuelgan de ella y alguien va a
 borrar el slug de la barra de direcciones para ver qué hay más arriba—. El copy
-está en `content/home.ts` y se reemplaza entero cuando llegue el buscador.
+está en `content/home.ts` y se reemplaza entero cuando llegue la barra de
+búsqueda, que es lo que va a vivir ahí.
+
+**`/explore` es la pantalla de resultados, no la entrada.** Lista los negocios
+publicados con un mapa al lado, filtra por rubro con la URL
+(`/explore?rubro=BARBERSHOP`) y no busca nada todavía: no hay dónde escribir.
+Cuando la raíz tenga su barra, va a mandar acá. Ver "El buscador" más abajo.
 
 **Los negocios van en la raíz** (`/royal-barber`, no `/n/royal-barber`), así que
 los nombres que use el sitio siguen estando reservados del lado del backend
 (`RESERVED_SLUGS`) para que ningún negocio quede en una URL inalcanzable. La
-lista se achicó al irse la landing: ya no hay que reservar `/privacy` ni
-`/terms`. Cada ruta estática nueva que se agregue acá es un slug menos
-disponible; vale la pena pensarlo antes.
+lista se achicó al irse la landing —ya no hay que reservar `/privacy` ni
+`/terms`— y volvió a crecer con `explore`. Cada ruta estática nueva que se
+agregue acá es un slug menos disponible; vale la pena pensarlo antes, y hay que
+reservarla en la API **antes** de desplegarla.
 
 ## Datos: `services/` y React Query
 
@@ -175,6 +183,35 @@ services/booking/
   —servicio → profesional → fecha y hora → datos— porque son los datos que el
   backend necesita, en el orden en que dejan de ser ambiguos.
 
+## El buscador (`/explore`)
+
+- **La lista la trae el servidor y no pasa por React Query.**
+  `services/explore/server/businesses.ts` pide `GET /public/businesses` a la API
+  —el `PublicDirectoryModule`, que es un módulo aparte del de reservas— y las
+  tarjetas llegan dibujadas en el HTML. React Query sigue envolviendo sólo
+  `app/(booking)`.
+- **Quién entra en la lista lo decide la API, no esta pantalla.** Publicado es
+  tener slug, cuenta activa y al menos un servicio; lo demás —fotos, dirección,
+  coordenadas— falta en casi todos y no excluye a nadie. Si acá apareciera un
+  filtro de "negocios que se ven bien", sería una segunda regla de publicación.
+- **No hay estrellas ni reseñas, porque Polaria no las tiene.** La referencia
+  visual (Fresha) las muestra; inventar un "4,9" en un listado de negocios
+  reales sería lo peor que puede hacer esta página.
+- **Los rubros que se ofrecen son los que existen.** Los chips salen de los
+  negocios cargados, no del catálogo: uno que devuelve cero es una promesa
+  incumplida y hace ver vacío un buscador que no lo está. Con menos de dos
+  rubros distintos, la fila entera desaparece. Ver `typeOptions`.
+- **El filtro va por la URL y el mapa por estado del navegador.** El rubro son
+  enlaces —anda sin JavaScript, se comparte, el botón de atrás funciona—;
+  mostrar u ocultar el mapa es una preferencia de quien mira y no una dirección.
+  `ExploreLayout` es lo único cliente de la página.
+- **Acá el mapa sí es interactivo**, al revés que en la reserva: arrastrarlo es
+  la función. Usa `NEXT_PUBLIC_MAPBOX_TOKEN`, que viaja al navegador y tiene que
+  estar restringido por dominio. Sin negocios con coordenadas no hay mapa ni
+  botón: un mapa sin marcadores es media pantalla que no sirve para nada.
+- **Los iconos de rubro son de `lucide-react`**, la misma librería que el panel.
+  Nunca reemplazan a la etiqueta: ninguno de esos dibujos dice "depilación" solo.
+
 ## Reglas del proyecto
 
 - **`app/(booking)/[businessSlug]/page.tsx` no lleva copy.** Sólo ordena la
@@ -192,9 +229,15 @@ services/booking/
   sí la de la raíz y la de cualquier ruta nueva del dominio. Hay que
   reemplazarla por una neutra. `app/icon.tsx` arrastra el mismo azul
   (`#0b50e8`).
-- **El buscador del marketplace**, y con él el sitemap: hoy `app/sitemap.ts`
-  lista sólo la raíz, y el lugar donde habría que pedirle a la API la lista de
-  negocios publicados está marcado ahí.
+- **La entrada del buscador.** `/explore` lista y filtra por rubro, pero no hay
+  dónde escribir: falta la barra de búsqueda de la raíz, y con ella buscar por
+  nombre, por zona y "buscar en esta área" cuando se mueve el mapa.
+- **El sitemap no lista los negocios.** Ahora la API sabe enumerarlos
+  (`listBusinesses`), así que es una línea; es una decisión aparte porque listar
+  a un negocio ahí es pedirle a Google que lo indexe.
+- **La tarjeta no muestra distancia ni si está abierto.** Lo primero necesita
+  pedirle la ubicación al navegador; lo segundo obliga a que el listado deje de
+  cachearse cinco minutos.
 
 ## Restricciones de marca (no negociables)
 
