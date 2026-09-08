@@ -1,38 +1,25 @@
-import { Navbar } from '@/components/layout/navbar';
-import { getCustomerSession } from '@/services/customer/server/session';
+import { SiteHeader } from '@/components/layout/site-header';
 
 /**
- * El buscador lleva la barra sólo en escritorio.
+ * El buscador lleva la barra sólo en escritorio, y de borde a borde.
  *
- * En el teléfono el mapa ocupa la pantalla entera, y una barra fija arriba le
- * come el alto justo donde más se nota; la lista, sin ella, abre directamente
- * con las tarjetas. En escritorio el mapa es un panel al costado y no la
- * pantalla, así que la barra no le saca nada, y sacarla dejaría al buscador sin
- * marca y sin forma de entrar a la cuenta o volver a la raíz.
+ * En el teléfono el mapa ocupa la pantalla entera y la lista abre directamente
+ * con las tarjetas; la salida de esta ruta es la flecha de `ExploreTopBar`. A
+ * partir de `lg` el mapa es un panel al costado y no la pantalla, así que la
+ * barra no le saca nada, y sacarla dejaría al buscador sin marca y sin forma de
+ * entrar a la cuenta.
  *
- * Se esconde con una clase y no se deja de renderizar: qué ancho tiene la
- * pantalla lo sabe CSS, y decidirlo en JavaScript significaría dibujar la
- * página una vez con barra y otra sin ella. El costo es que el HTML la trae
- * igual; es una barra, no una lista de negocios.
- *
- * Va **de borde a borde** y no centrada: abajo no hay una columna con la que
- * alinearse sino la pantalla entera —el mapa llega hasta el borde derecho y la
- * lista hasta el izquierdo—, y una barra centrada arriba de eso deja el logo
- * alineado con nada.
- *
- * Es la única ruta del sitio con un encabezado propio. Las demás lo heredan de
- * `app/(site)/layout.tsx`.
+ * Va **ancha** y no centrada: abajo no hay una columna con la que alinearse
+ * sino la pantalla entera —el mapa llega hasta el borde derecho y la lista
+ * hasta el izquierdo—, y una barra centrada arriba de eso deja el logo alineado
+ * con nada.
  */
-export default async function ExploreLayout({
+export default function ExploreLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
-	const session = await getCustomerSession();
-
 	return (
 		<>
-			<div className="hidden lg:block">
-				<Navbar session={session} wide />
-			</div>
+			<SiteHeader showFrom="lg" wide />
 			{children}
 		</>
 	);

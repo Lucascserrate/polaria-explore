@@ -8,6 +8,7 @@ import {
 	ServiceList,
 } from '@/features/booking/components/BookButton';
 import { BookingSidebar } from '@/features/booking/components/BookingSidebar';
+import { BackButton } from '@/features/booking/components/BackButton';
 import { BusinessGallery } from '@/features/booking/components/BusinessGallery';
 import { BusinessHeader } from '@/features/booking/components/BusinessHeader';
 import {
@@ -60,16 +61,25 @@ export default async function BusinessBookingPage({ params }: Props) {
 	// URL la escribe gente a mano y se equivoca.
 	if (!profile) notFound();
 
+	const hasPhotos = profile.photos.length > 0;
+
 	return (
 		<>
 			<main className="pb-10">
 				<Container className="max-w-6xl pb-6 pt-0 sm:py-10">
 					<div className="flex flex-col">
 						<div className="relative z-10 order-2 -mx-5 -mt-4 rounded-t-2xl bg-paper-50 px-5 pt-5 sm:order-1 sm:mx-0 sm:mt-0 sm:rounded-none sm:px-0 sm:pt-0">
+							{!hasPhotos && <BackButton variant="inline" className="mb-4" />}
 							<BusinessHeader profile={profile} />
 						</div>
-						<div className="order-1 sm:order-2 sm:mt-6">
+						<div className="relative order-1 sm:order-2 sm:mt-6">
 							<BusinessGallery profile={profile} />
+							{hasPhotos && (
+								<BackButton
+									variant="overlay"
+									className="absolute top-4 left-0 z-10"
+								/>
+							)}
 						</div>
 					</div>
 

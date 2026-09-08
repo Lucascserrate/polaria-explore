@@ -16,6 +16,8 @@ export const booking = {
 		servicesCount: (count: number) =>
 			count === 1 ? '1 servicio disponible' : `${count} servicios disponibles`,
 		directions: 'Cómo llegar',
+
+		back: 'Volver',
 	},
 
 	/**
