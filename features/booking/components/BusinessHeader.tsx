@@ -1,4 +1,5 @@
 import { booking } from '@/content/booking';
+import { businessTypeLabel } from '@/content/business-types';
 import { cn } from '@/lib/utils';
 import { describeStatus } from '../format';
 import { directionsUrl } from '../location';
@@ -19,13 +20,13 @@ export function BusinessHeader({
 }) {
 	const directions = directionsUrl(profile);
 
+	const typeLabel = businessTypeLabel(profile.businessType);
+
 	return (
 		<header className="space-y-3">
 			<div className="space-y-1">
 				<h1 className="text-3xl font-semibold sm:text-4xl">{profile.name}</h1>
-				{profile.businessType && (
-					<p className="text-ink-500 capitalize">{profile.businessType}</p>
-				)}
+				{typeLabel && <p className="text-ink-500 capitalize">{typeLabel}</p>}
 			</div>
 
 			<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">

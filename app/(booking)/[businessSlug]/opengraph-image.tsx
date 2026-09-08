@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { booking } from '@/content/booking';
+import { businessTypeLabel } from '@/content/business-types';
 import { initials } from '@/lib/initials';
 import { getBusinessProfile } from '@/services/booking/server/business';
 import coverUrl from './utils/coverUrl';
@@ -20,8 +21,7 @@ export default async function Image({
 
 	const cover = profile.photos[0];
 	const mark = initials(profile.name);
-	const subtitle = profile.address ?? profile.businessType;
-	const capitalize = !profile.address && Boolean(profile.businessType);
+	const subtitle = profile.address ?? businessTypeLabel(profile.businessType);
 
 	return new ImageResponse(
 		<div style={{ ...CARD, position: 'relative' }}>
@@ -104,7 +104,6 @@ export default async function Image({
 							fontSize: 30,
 							marginTop: 20,
 							maxWidth: 940,
-							textTransform: capitalize ? 'capitalize' : 'none',
 						}}
 					>
 						{subtitle}
