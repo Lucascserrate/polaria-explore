@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
-import type { MapPin } from '@/components/map/interactive-map';
 import { explore } from '@/content/explore';
 import { BusinessCard } from '@/features/explore/components/BusinessCard';
 import { BusinessTypeFilter } from '@/features/explore/components/BusinessTypeFilter';
 import { ExploreLayout } from '@/features/explore/components/ExploreLayout';
 import { fitView } from '@/features/explore/map-view';
 import { typeOptions } from '@/features/explore/type-options';
-import { initials } from '@/lib/initials';
 import { listBusinesses } from '@/services/explore/server/businesses';
-import type { PublicBusinessSummary } from '@/services/explore/types';
+import { hasLocation } from '@/services/explore/types';
 
 /**
  * El buscador del marketplace.
@@ -54,14 +52,14 @@ export default async function ExplorePage({
 		? businesses.filter((business) => business.businessType === selected)
 		: businesses;
 
-	const pins = shown.filter(hasLocation).map(toPin);
+	const located = shown.filter(hasLocation);
 
 	return (
 		<ExploreLayout
 			count={shown.length}
 			filter={<BusinessTypeFilter options={options} selected={selected} />}
-			view={fitView(pins)}
-			pins={pins}
+			view={fitView(located.map((business) => business.location))}
+			located={located}
 			empty={
 				shown.length > 0
 					? undefined
@@ -76,26 +74,3 @@ export default async function ExplorePage({
 		</ExploreLayout>
 	);
 }
-
-/** Un negocio que sí tiene coordenadas, para que el marcador no tenga que dudar. */
-type Located = PublicBusinessSummary & {
-	location: NonNullable<PublicBusinessSummary['location']>;
-};
-
-const hasLocation = (business: PublicBusinessSummary): business is Located =>
-	business.location !== null;
-
-/**
- * El marcador lleva las iniciales del negocio.
- *
- * No hay puntaje que mostrar —Polaria no tiene reseñas— y un mapa de círculos
- * idénticos obliga a tocarlos de a uno para saber cuál es cuál. Las iniciales
- * no identifican a nadie con certeza, pero alcanzan para volver a encontrar el
- * que ya se miró. El nombre completo lo dice la etiqueta accesible.
- */
-const toPin = (business: Located): MapPin => ({
-	id: business.slug,
-	label: initials(business.name),
-	latitude: business.location.latitude,
-	longitude: business.location.longitude,
-});

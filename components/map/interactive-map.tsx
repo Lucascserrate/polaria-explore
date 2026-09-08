@@ -3,8 +3,12 @@
 // Sin esto, el canvas y los controles se dibujan sin estilos.
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import { useEffect, useRef } from 'react';
-import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
+import { useEffect, useRef, type ReactNode } from 'react';
+import Map, {
+	Marker,
+	NavigationControl,
+	type MapRef,
+} from 'react-map-gl/mapbox';
 import { MAPBOX_PUBLIC_STYLE, MAPBOX_PUBLIC_TOKEN } from '@/config/map';
 import { map as copy } from '@/content/map';
 import { cn } from '@/lib/utils';
@@ -17,8 +21,8 @@ export interface Coordinates {
 /** Un negocio en el mapa. `id` es lo que vuelve en `onSelect`. */
 export interface MapPin extends Coordinates {
 	id: string;
-	/** Lo que se lee en el marcador: hoy la inicial o el nombre corto. */
 	label: string;
+	icon?: ReactNode;
 	/** Resaltado, porque la lista de al lado lo tiene marcado. */
 	active?: boolean;
 }
@@ -67,7 +71,9 @@ export function InteractiveMap({
 	flyTo,
 	className,
 	onSelect,
+	onDeselect,
 	onMoveEnd,
+	children,
 }: {
 	/** Dónde abre. Sólo se lee al montar; después manda el propio mapa. */
 	initialCenter: Coordinates;
@@ -77,8 +83,10 @@ export function InteractiveMap({
 	className?: string;
 	/** Tocaron un marcador. */
 	onSelect?: (id: string) => void;
+	onDeselect?: () => void;
 	/** El mapa dejó de moverse: sirve para "buscar en esta zona". */
 	onMoveEnd?: (center: Coordinates) => void;
+	children?: ReactNode;
 }) {
 	const mapRef = useRef<MapRef | null>(null);
 
@@ -137,6 +145,7 @@ export function InteractiveMap({
 						longitude: event.viewState.longitude,
 					})
 				}
+				onClick={() => onDeselect?.()}
 			>
 				<NavigationControl position="top-right" showCompass={false} />
 
@@ -145,7 +154,7 @@ export function InteractiveMap({
 						key={pin.id}
 						latitude={pin.latitude}
 						longitude={pin.longitude}
-						anchor="bottom"
+						anchor="center"
 						onClick={(event) => {
 							// Sin esto, el clic llega al mapa y además lo desplaza.
 							event.originalEvent.stopPropagation();
@@ -155,17 +164,19 @@ export function InteractiveMap({
 						<button
 							type="button"
 							aria-label={copy.pinLabel(pin.label)}
+							aria-expanded={pin.active ?? false}
 							className={cn(
-								'grid size-8 cursor-pointer place-items-center rounded-full text-xs font-semibold shadow-md ring-2 ring-white transition-transform',
+								'grid size-7 cursor-pointer place-items-center rounded-full shadow-md ring-2 ring-white transition-transform',
 								pin.active
 									? 'scale-110 bg-accent-600 text-white'
 									: 'bg-ink-950 text-white hover:scale-105',
 							)}
 						>
-							{pin.label}
+							{pin.icon}
 						</button>
 					</Marker>
 				))}
+				{children}
 			</Map>
 		</div>
 	);

@@ -167,3 +167,28 @@
 		scroll-behavior: auto !important;
 	}
 }
+
+/* ---------------------------------------------------------------------------
+   El globo del buscador
+
+   Mapbox dibuja sus globos con fondo blanco, padding, esquinas propias y un
+   piquito. Acá adentro va una tarjeta que ya tiene todo eso —y una foto que
+   llega hasta el borde—, así que lo que hace este bloque es vaciar el globo y
+   dejar sólo su posición, que es lo único que sabe hacer mejor que nosotros:
+   seguir al marcador y darse vuelta cuando queda contra el borde del mapa.
+
+   El piquito se esconde en lugar de pintarse del color de la tarjeta: la
+   referencia no lo tiene, y sobre un mapa con calles una punta suelta parece un
+   error de dibujo.
+--------------------------------------------------------------------------- */
+
+.explore-popup .mapboxgl-popup-content {
+	padding: 0;
+	background: transparent;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.explore-popup .mapboxgl-popup-tip {
+	display: none;
+}

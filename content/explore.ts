@@ -27,7 +27,6 @@ export const explore = {
 	map: {
 		show: 'Mostrar mapa',
 		hide: 'Ocultar mapa',
-
 		/**
 		 * El botón redondo que flota sobre el mapa en el teléfono.
 		 *
@@ -37,8 +36,9 @@ export const explore = {
 		 */
 		backToList: 'Ver la lista',
 
-		/** El marcador es un botón y lleva a la página del negocio. */
 		pinLabel: (name: string) => `Ver ${name}`,
+
+		closePreview: 'Cerrar',
 	},
 	empty: {
 		filtered: 'No hay negocios de ese rubro por ahora.',

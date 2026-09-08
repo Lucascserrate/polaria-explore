@@ -1,8 +1,7 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { businessTypeLabel } from '@/content/business-types';
-import { initials } from '@/lib/initials';
 import type { PublicBusinessSummary } from '@/services/explore/types';
+import { BusinessMedia } from './BusinessMedia';
 
 /**
  * Qué ancho ocupa la tarjeta en cada pantalla, para que el navegador baje la
@@ -21,15 +20,14 @@ const CARD_SIZES = '(max-width: 640px) 100vw, (max-width: 1280px) 45vw, 24vw';
  * Componente de servidor, como casi todo: no tiene estado. Lo único que hace es
  * llevar a `polariahq.com/[slug]`, que es la página que sí sabe reservar.
  *
- * **Tres formas de tener imagen, y ninguna es un hueco gris.** La portada
- * —primera foto de la galería— es la buena y la tiene poca gente; sin ella
- * queda el logo, centrado sobre blanco en vez de recortado a sangre, porque un
- * logo estirado se ve roto; sin logo, la tarjeta negra con las iniciales, que
- * es la misma que usa la vista previa del enlace. La tercera no es un error:
- * hoy es el caso mayoritario, y la grilla tiene que verse terminada así.
- *
  * No hay estrellas ni reseñas porque Polaria no las tiene. Inventar un "4,9"
  * sería lo peor que puede hacer un listado de negocios reales.
+ *
+ * **La foto va apaisada (16:9) y no en 4:3.** Es la proporción de la
+ * referencia, y la razón es cuántas tarjetas entran en la primera pantalla: en
+ * 4:3 cada fila come un tercio más de alto y la lista al lado del mapa muestra
+ * dos filas donde entraban tres. Lo que hay que comparar acá es varios negocios
+ * a la vez; la foto grande es la de la página del negocio.
  */
 export function BusinessCard({
 	business,
@@ -44,8 +42,8 @@ export function BusinessCard({
 				href={`/${business.slug}`}
 				className="group block rounded-2xl focus-visible:outline-offset-4"
 			>
-				<div className="relative aspect-video overflow-hidden rounded-2xl bg-paper-200">
-					<Media business={business} />
+				<div className="relative aspect-16/9 overflow-hidden rounded-2xl bg-paper-200">
+					<BusinessMedia business={business} sizes={CARD_SIZES} />
 				</div>
 
 				<h2 className="mt-3 truncate text-[0.9375rem] font-medium text-ink-950">
@@ -63,45 +61,6 @@ export function BusinessCard({
 				)}
 			</Link>
 		</li>
-	);
-}
-
-function Media({ business }: { business: PublicBusinessSummary }) {
-	if (business.coverPhoto) {
-		return (
-			<Image
-				src={business.coverPhoto.url}
-				alt=""
-				fill
-				sizes={CARD_SIZES}
-				className="object-cover transition-transform duration-500 ease-out-soft group-hover:scale-[1.03]"
-			/>
-		);
-	}
-
-	if (business.logoUrl) {
-		return (
-			<div className="absolute inset-0 bg-white ring-1 ring-paper-300 ring-inset">
-				<Image
-					src={business.logoUrl}
-					alt=""
-					fill
-					sizes={CARD_SIZES}
-					className="object-contain p-6"
-				/>
-			</div>
-		);
-	}
-
-	return (
-		<div className="absolute inset-0 grid place-items-center bg-ink-950">
-			<span
-				aria-hidden
-				className="text-3xl font-semibold tracking-[-0.03em] text-paper-50"
-			>
-				{initials(business.name)}
-			</span>
-		</div>
 	);
 }
 

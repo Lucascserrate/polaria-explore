@@ -30,3 +30,18 @@ export type PublicBusinessSummary = {
 export type PublicBusinessDirectory = {
 	businesses: PublicBusinessSummary[];
 };
+
+/**
+ * Un negocio que sí tiene coordenadas.
+ *
+ * Vive acá y no en la página porque lo necesitan tres: el mapa, sus marcadores
+ * y la vista previa que se abre al tocar uno. Los tres tienen que poder leer
+ * `location` sin preguntarse si está.
+ */
+export type LocatedBusiness = PublicBusinessSummary & {
+	location: NonNullable<PublicBusinessSummary['location']>;
+};
+
+export const hasLocation = (
+	business: PublicBusinessSummary,
+): business is LocatedBusiness => business.location !== null;

@@ -2,9 +2,9 @@
 
 import { useState, type ReactNode } from 'react';
 import { List, Map as MapIcon } from 'lucide-react';
-import type { MapPin } from '@/components/map/interactive-map';
 import { explore } from '@/content/explore';
 import { cn } from '@/lib/utils';
+import type { LocatedBusiness } from '@/services/explore/types';
 import type { MapView } from '../map-view';
 import { ExploreMap } from './ExploreMap';
 
@@ -34,7 +34,7 @@ export function ExploreLayout({
 	count,
 	filter,
 	view,
-	pins,
+	located,
 	empty,
 	children,
 }: {
@@ -43,7 +43,12 @@ export function ExploreLayout({
 	filter: ReactNode;
 	/** Dónde abre el mapa, o `null` si ningún negocio tiene coordenadas. */
 	view: MapView | null;
-	pins: MapPin[];
+	/**
+	 * Los negocios con coordenadas. El mapa arma sus marcadores con esto y, al
+	 * tocar uno, la vista previa sale de acá mismo: es el mismo negocio que está
+	 * en la lista, no una versión recortada para el mapa.
+	 */
+	located: LocatedBusiness[];
 	/** El texto de "no hay nada", cuando no hay nada. Manda sobre `children`. */
 	empty?: string;
 	children: ReactNode;
@@ -63,7 +68,7 @@ export function ExploreLayout({
 	const openWide = choice ?? true;
 	const openNarrow = choice ?? false;
 
-	const hasMap = view !== null && pins.length > 0;
+	const hasMap = view !== null && located.length > 0;
 
 	return (
 		<main className="flex-1">
@@ -145,9 +150,8 @@ export function ExploreLayout({
 						)}
 					>
 						<ExploreMap
-							pins={pins}
-							center={view.center}
-							zoom={view.zoom}
+							businesses={located}
+							view={view}
 							className="size-full overflow-hidden lg:rounded-2xl"
 						/>
 
