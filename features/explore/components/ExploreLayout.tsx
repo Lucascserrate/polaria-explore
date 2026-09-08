@@ -84,51 +84,49 @@ export function ExploreLayout({
 			<div className="flex flex-col lg:flex-row lg:items-start">
 				<div
 					className={cn(
-						'min-w-0 flex-1 px-5 py-5 sm:px-8',
+						'min-w-0 flex-1 px-5 py-5 sm:px-8 lg:max-w-[855px]',
 						hasMap && openNarrow ? 'hidden lg:block' : 'block',
-						hasMap && openWide && 'lg:w-1/2 lg:max-w-[640px] lg:flex-none',
+						hasMap && openWide ? 'lg:w-1/2 lg:flex-none' : 'lg:mx-auto',
 					)}
 				>
-					<div className="mx-auto w-full max-w-[855px]">
-						<div className="sticky top-3 z-20 lg:hidden">
-							<ExploreTopBar
-								count={count}
-								mapOpen={false}
-								onToggleMap={hasMap ? () => setChoice(true) : undefined}
-							/>
-						</div>
-						<div className="hidden items-center justify-between gap-4 lg:flex">
-							<p className="text-sm text-ink-600">{explore.count(count)}</p>
+					<div className="sticky top-3 z-20 lg:hidden">
+						<ExploreTopBar
+							count={count}
+							mapOpen={false}
+							onToggleMap={hasMap ? () => setChoice(true) : undefined}
+						/>
+					</div>
+					<div className="hidden items-center justify-between gap-4 lg:flex">
+						<p className="text-sm text-ink-600">{explore.count(count)}</p>
 
-							{hasMap && (
-								<button
-									type="button"
-									onClick={() => setChoice(!openWide)}
-									className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200"
-								>
-									<MapIcon aria-hidden className="size-4" strokeWidth={1.75} />
-									{openWide ? explore.map.hide : explore.map.show}
-								</button>
-							)}
-						</div>
-
-						<div className="mt-4">{filter}</div>
-
-						{empty ? (
-							<p className="py-16 text-center text-ink-600">{empty}</p>
-						) : (
-							<ul
-								className={cn(
-									'mt-6 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2',
-									// Tres y no cuatro: dentro de los 855px, cuatro columnas
-									// dejan tarjetas donde el nombre del negocio no entra.
-									!(hasMap && openWide) && 'lg:grid-cols-3',
-								)}
+						{hasMap && (
+							<button
+								type="button"
+								onClick={() => setChoice(!openWide)}
+								className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200"
 							>
-								{children}
-							</ul>
+								<MapIcon aria-hidden className="size-4" strokeWidth={1.75} />
+								{openWide ? explore.map.hide : explore.map.show}
+							</button>
 						)}
 					</div>
+
+					<div className="mt-4">{filter}</div>
+
+					{empty ? (
+						<p className="py-16 text-center text-ink-600">{empty}</p>
+					) : (
+						<ul
+							className={cn(
+								'mt-6 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2',
+								// Tres y no cuatro: dentro de los 855px, cuatro columnas
+								// dejan tarjetas donde el nombre del negocio no entra.
+								!(hasMap && openWide) && 'lg:grid-cols-3',
+							)}
+						>
+							{children}
+						</ul>
+					)}
 				</div>
 
 				{hasMap && (
