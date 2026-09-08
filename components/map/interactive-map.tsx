@@ -18,12 +18,31 @@ export interface Coordinates {
 	longitude: number;
 }
 
-/** Un negocio en el mapa. `id` es lo que vuelve en `onSelect`. */
+/**
+ * Un negocio en el mapa. `id` es lo que vuelve en `onSelect`.
+ *
+ * El marcador es una pastilla apaisada con una punta abajo, y la punta es el
+ * punto: por eso el ancla es `bottom` y no `center`. Apaisada porque adentro va
+ * un dibujo ancho y no una letra, y sin aro blanco porque el contorno le sumaba
+ * dos píxeles de nada a una forma que ya se despega del mapa por su sombra.
+ */
 export interface MapPin extends Coordinates {
 	id: string;
 	label: string;
 	icon?: ReactNode;
-	/** Resaltado, porque la lista de al lado lo tiene marcado. */
+	/**
+	 * El que está abierto: se dibuja más grande, y nada más.
+	 *
+	 * **Por tamaño y no por color.** Sobre un mapa, un marcador de otro color se
+	 * lee como otra cosa —otra categoría, un aviso, algo cerrado— y no como el
+	 * que se acaba de tocar. El más grande es el mismo objeto un paso adelante,
+	 * que es exactamente lo que pasó. Además el color acá está reservado para el
+	 * mapa de abajo, que es lo único que lo tiene en toda la pantalla.
+	 *
+	 * Es el mismo gesto que el `hover`, un escalón más: pasar por encima levanta
+	 * un poco, tocar lo deja levantado. Así se entiende sin leer nada que el
+	 * grande es el elegido y no una clase distinta de negocio.
+	 */
 	active?: boolean;
 }
 
@@ -180,7 +199,7 @@ export function InteractiveMap({
 						key={pin.id}
 						latitude={pin.latitude}
 						longitude={pin.longitude}
-						anchor="center"
+						anchor="bottom"
 						onClick={(event) => {
 							// Sin esto, el clic llega al mapa y además lo desplaza.
 							event.originalEvent.stopPropagation();
@@ -192,13 +211,19 @@ export function InteractiveMap({
 							aria-label={copy.pinLabel(pin.label)}
 							aria-expanded={pin.active ?? false}
 							className={cn(
-								'grid size-7 cursor-pointer place-items-center rounded-full shadow-md ring-2 ring-white transition-transform',
-								pin.active
-									? 'scale-110 bg-accent-600 text-white'
-									: 'bg-ink-950 text-white hover:scale-105',
+								'relative block cursor-pointer pb-1.5 drop-shadow-md transition-transform',
+								'origin-bottom',
+								pin.active ? 'scale-125' : 'hover:scale-110',
 							)}
 						>
-							{pin.icon}
+							<span className="flex h-5.5 items-center justify-center rounded-full bg-ink-950 px-2.5 text-white">
+								{pin.icon}
+							</span>
+
+							<span
+								aria-hidden
+								className="absolute bottom-0 left-1/2 size-0 -translate-x-1/2 border-x-4 border-x-transparent border-t-[6px] border-t-ink-950"
+							/>
 						</button>
 					</Marker>
 				))}
