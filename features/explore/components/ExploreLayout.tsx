@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { List, Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 import { explore } from '@/content/explore';
 import { cn } from '@/lib/utils';
 import type { LocatedBusiness } from '@/services/explore/types';
 import type { MapView } from '../map-view';
 import { ExploreMap } from './ExploreMap';
+import { ExploreTopBar } from './ExploreTopBar';
 
 /**
  * La pantalla del buscador. Son dos diseños, no uno que se encoge.
@@ -85,51 +86,29 @@ export function ExploreLayout({
 					className={cn(
 						'min-w-0 flex-1 px-5 py-5 sm:px-8',
 						hasMap && openNarrow ? 'hidden lg:block' : 'block',
-						hasMap && openWide && 'lg:w-1/2 lg:flex-none xl:w-[46%]',
+						hasMap && openWide && 'lg:w-1/2 lg:max-w-[640px] lg:flex-none',
 					)}
 				>
-					{/*
-					  La lista tiene un ancho máximo aunque la pantalla no lo tenga.
-					  Sin el mapa al lado, estirarla a lo ancho de un monitor no muestra
-					  más negocios: los muestra más grandes, y una tarjeta de medio metro
-					  con una foto de un local no se lee mejor, se lee peor. Con este
-					  tope, tres columnas dan tarjetas del mismo tamaño que las dos
-					  columnas de al lado del mapa —el negocio se ve igual en las dos
-					  vistas— y el recuento y los rubros quedan alineados con la primera
-					  tarjeta en vez de irse al borde de la pantalla.
-					*/}
 					<div className="mx-auto w-full max-w-[855px]">
-						<div className="flex items-center justify-between gap-4">
+						<div className="sticky top-3 z-20 lg:hidden">
+							<ExploreTopBar
+								count={count}
+								mapOpen={false}
+								onToggleMap={hasMap ? () => setChoice(true) : undefined}
+							/>
+						</div>
+						<div className="hidden items-center justify-between gap-4 lg:flex">
 							<p className="text-sm text-ink-600">{explore.count(count)}</p>
 
 							{hasMap && (
-								<>
-									<button
-										type="button"
-										onClick={() => setChoice(true)}
-										aria-label={explore.map.show}
-										className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-paper-300 text-ink-900 transition-colors hover:bg-paper-200 lg:hidden"
-									>
-										<MapIcon
-											aria-hidden
-											className="size-5"
-											strokeWidth={1.75}
-										/>
-									</button>
-
-									<button
-										type="button"
-										onClick={() => setChoice(!openWide)}
-										className="hidden shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200 lg:flex"
-									>
-										<MapIcon
-											aria-hidden
-											className="size-4"
-											strokeWidth={1.75}
-										/>
-										{openWide ? explore.map.hide : explore.map.show}
-									</button>
-								</>
+								<button
+									type="button"
+									onClick={() => setChoice(!openWide)}
+									className="flex shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200"
+								>
+									<MapIcon aria-hidden className="size-4" strokeWidth={1.75} />
+									{openWide ? explore.map.hide : explore.map.show}
+								</button>
 							)}
 						</div>
 
@@ -187,18 +166,13 @@ export function ExploreLayout({
 							className="explore-map size-full overflow-hidden lg:rounded-2xl"
 						/>
 
-						{/*
-						  Volver a la lista. Sólo en el teléfono: en escritorio la lista
-						  nunca se fue.
-						*/}
-						<button
-							type="button"
-							onClick={() => setChoice(false)}
-							aria-label={explore.map.backToList}
-							className="absolute top-4 right-4 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-paper-50 text-ink-900 shadow-md ring-1 ring-paper-300 lg:hidden"
-						>
-							<List aria-hidden className="size-5" strokeWidth={1.75} />
-						</button>
+						<div className="absolute inset-x-3 top-3 z-10 lg:hidden">
+							<ExploreTopBar
+								count={count}
+								mapOpen
+								onToggleMap={() => setChoice(false)}
+							/>
+						</div>
 					</div>
 				)}
 			</div>

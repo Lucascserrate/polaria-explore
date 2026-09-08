@@ -24,6 +24,8 @@ export const explore = {
 	/** El rubro sin elegir: la lista completa. */
 	allTypes: 'Todos',
 
+	back: 'Volver',
+
 	map: {
 		show: 'Mostrar mapa',
 		hide: 'Ocultar mapa',
