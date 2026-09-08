@@ -27,10 +27,25 @@ import type { CustomerSession } from '@/services/customer/types';
  * marketplace: es el lugar natural donde va a estar, y por eso esta barra vive
  * en el layout raíz y no en el grupo de la reserva.
  */
-export function Navbar({ session }: { session: CustomerSession | null }) {
+export function Navbar({
+	session,
+	wide = false,
+}: {
+	session: CustomerSession | null;
+	/**
+	 * De borde a borde, en lugar de centrada en la columna del sitio.
+	 *
+	 * Es para el buscador, que abajo no tiene una columna sino la pantalla
+	 * entera: el mapa llega hasta el borde derecho y la lista hasta el
+	 * izquierdo. Una barra centrada arriba de eso deja el logo flotando en el
+	 * medio de la nada, alineado con nada. Las páginas que sí tienen una columna
+	 * —la raíz, la reserva— siguen con la barra centrada sobre ella.
+	 */
+	wide?: boolean;
+}) {
 	return (
 		<header className="sticky top-0 z-50 border-b border-paper-300 bg-white">
-			<Container className="max-w-6xl">
+			<Container className={wide ? 'max-w-none' : 'max-w-6xl'}>
 				<nav
 					aria-label={account.nav.label}
 					className="flex h-16 items-center justify-between gap-6 sm:h-18"

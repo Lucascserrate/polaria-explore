@@ -7,12 +7,14 @@ import { BusinessMedia } from './BusinessMedia';
  * Qué ancho ocupa la tarjeta en cada pantalla, para que el navegador baje la
  * foto del tamaño que va a dibujar y no la de 2000px que subió el dueño.
  *
- * Los números siguen a la grilla de `ExploreLayout` —una columna en el
- * teléfono, dos junto al mapa, hasta cuatro sin él— y son una aproximación a
- * propósito: `sizes` no tiene que ser exacto, tiene que evitar que se baje una
- * imagen diez veces más grande de lo necesario.
+ * Los números siguen a la grilla de `ExploreLayout`: una columna en el
+ * teléfono, dos hasta que aparece el mapa, y de ahí en adelante siempre
+ * alrededor de 280px —tres columnas dentro de los 855px de la lista, o dos
+ * columnas en la mitad de pantalla que queda junto al mapa—. Es una
+ * aproximación a propósito: `sizes` no tiene que ser exacto, tiene que evitar
+ * que se baje una imagen diez veces más grande de lo necesario.
  */
-const CARD_SIZES = '(max-width: 640px) 100vw, (max-width: 1280px) 45vw, 24vw';
+const CARD_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px';
 
 /**
  * Un negocio en el listado: la foto, el nombre, dónde está y de qué es.

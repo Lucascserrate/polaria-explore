@@ -15,6 +15,11 @@ import { getCustomerSession } from '@/services/customer/server/session';
  * página una vez con barra y otra sin ella. El costo es que el HTML la trae
  * igual; es una barra, no una lista de negocios.
  *
+ * Va **de borde a borde** y no centrada: abajo no hay una columna con la que
+ * alinearse sino la pantalla entera —el mapa llega hasta el borde derecho y la
+ * lista hasta el izquierdo—, y una barra centrada arriba de eso deja el logo
+ * alineado con nada.
+ *
  * Es la única ruta del sitio con un encabezado propio. Las demás lo heredan de
  * `app/(site)/layout.tsx`.
  */
@@ -26,7 +31,7 @@ export default async function ExploreLayout({
 	return (
 		<>
 			<div className="hidden lg:block">
-				<Navbar session={session} />
+				<Navbar session={session} wide />
 			</div>
 			{children}
 		</>

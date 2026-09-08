@@ -88,46 +88,68 @@ export function ExploreLayout({
 						hasMap && openWide && 'lg:w-1/2 lg:flex-none xl:w-[46%]',
 					)}
 				>
-					<div className="flex items-center justify-between gap-4">
-						<p className="text-sm text-ink-600">{explore.count(count)}</p>
+					{/*
+					  La lista tiene un ancho máximo aunque la pantalla no lo tenga.
+					  Sin el mapa al lado, estirarla a lo ancho de un monitor no muestra
+					  más negocios: los muestra más grandes, y una tarjeta de medio metro
+					  con una foto de un local no se lee mejor, se lee peor. Con este
+					  tope, tres columnas dan tarjetas del mismo tamaño que las dos
+					  columnas de al lado del mapa —el negocio se ve igual en las dos
+					  vistas— y el recuento y los rubros quedan alineados con la primera
+					  tarjeta en vez de irse al borde de la pantalla.
+					*/}
+					<div className="mx-auto w-full max-w-[855px]">
+						<div className="flex items-center justify-between gap-4">
+							<p className="text-sm text-ink-600">{explore.count(count)}</p>
 
-						{hasMap && (
-							<>
-								<button
-									type="button"
-									onClick={() => setChoice(true)}
-									aria-label={explore.map.show}
-									className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-paper-300 text-ink-900 transition-colors hover:bg-paper-200 lg:hidden"
-								>
-									<MapIcon aria-hidden className="size-5" strokeWidth={1.75} />
-								</button>
+							{hasMap && (
+								<>
+									<button
+										type="button"
+										onClick={() => setChoice(true)}
+										aria-label={explore.map.show}
+										className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-paper-300 text-ink-900 transition-colors hover:bg-paper-200 lg:hidden"
+									>
+										<MapIcon
+											aria-hidden
+											className="size-5"
+											strokeWidth={1.75}
+										/>
+									</button>
 
-								<button
-									type="button"
-									onClick={() => setChoice(!openWide)}
-									className="hidden shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200 lg:flex"
-								>
-									<MapIcon aria-hidden className="size-4" strokeWidth={1.75} />
-									{openWide ? explore.map.hide : explore.map.show}
-								</button>
-							</>
+									<button
+										type="button"
+										onClick={() => setChoice(!openWide)}
+										className="hidden shrink-0 cursor-pointer items-center gap-2 rounded-full border border-paper-300 px-3.5 py-2 text-sm font-medium text-ink-800 transition-colors hover:border-paper-400 hover:bg-paper-200 lg:flex"
+									>
+										<MapIcon
+											aria-hidden
+											className="size-4"
+											strokeWidth={1.75}
+										/>
+										{openWide ? explore.map.hide : explore.map.show}
+									</button>
+								</>
+							)}
+						</div>
+
+						<div className="mt-4">{filter}</div>
+
+						{empty ? (
+							<p className="py-16 text-center text-ink-600">{empty}</p>
+						) : (
+							<ul
+								className={cn(
+									'mt-6 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2',
+									// Tres y no cuatro: dentro de los 855px, cuatro columnas
+									// dejan tarjetas donde el nombre del negocio no entra.
+									!(hasMap && openWide) && 'lg:grid-cols-3',
+								)}
+							>
+								{children}
+							</ul>
 						)}
 					</div>
-
-					<div className="mt-4">{filter}</div>
-
-					{empty ? (
-						<p className="py-16 text-center text-ink-600">{empty}</p>
-					) : (
-						<ul
-							className={cn(
-								'mt-6 grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2',
-								!(hasMap && openWide) && 'lg:grid-cols-3 2xl:grid-cols-4',
-							)}
-						>
-							{children}
-						</ul>
-					)}
 				</div>
 
 				{hasMap && (
