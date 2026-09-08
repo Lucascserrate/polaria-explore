@@ -44,7 +44,7 @@ export function BusinessCard({
 				href={`/${business.slug}`}
 				className="group block rounded-2xl focus-visible:outline-offset-4"
 			>
-				<div className="relative aspect-4/3 overflow-hidden rounded-2xl bg-paper-200">
+				<div className="relative aspect-video overflow-hidden rounded-2xl bg-paper-200">
 					<Media business={business} />
 				</div>
 
@@ -87,7 +87,7 @@ function Media({ business }: { business: PublicBusinessSummary }) {
 					alt=""
 					fill
 					sizes={CARD_SIZES}
-					className="object-contain p-8"
+					className="object-contain p-6"
 				/>
 			</div>
 		);
