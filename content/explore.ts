@@ -27,6 +27,16 @@ export const explore = {
 	map: {
 		show: 'Mostrar mapa',
 		hide: 'Ocultar mapa',
+
+		/**
+		 * El botón redondo que flota sobre el mapa en el teléfono.
+		 *
+		 * Ahí el mapa ocupa la pantalla entera y el botón es sólo un icono, así
+		 * que este texto no se lee: lo anuncia el lector de pantalla. Dice a
+		 * dónde lleva —la lista— y no qué esconde, porque tocarlo es volver.
+		 */
+		backToList: 'Ver la lista',
+
 		/** El marcador es un botón y lleva a la página del negocio. */
 		pinLabel: (name: string) => `Ver ${name}`,
 	},
