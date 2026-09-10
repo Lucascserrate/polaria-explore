@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { Viewport } from '@/components/map/interactive-map';
 import type { LocatedBusiness } from '@/services/explore/types';
 import type { MapView } from '../map-view';
 
@@ -25,6 +26,7 @@ export function ExploreMap(props: {
 	businesses: LocatedBusiness[];
 	view: MapView;
 	className?: string;
+	onViewportChange?: (viewport: Viewport) => void;
 }) {
 	return <ExploreMapView {...props} />;
 }

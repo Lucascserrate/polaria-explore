@@ -21,6 +21,16 @@ export const explore = {
 	 */
 	count: (total: number) => (total === 1 ? '1 negocio' : `${total} negocios`),
 
+	/**
+	 * Lo mismo, pero cuando el mapa está recortando la lista.
+	 *
+	 * Decirlo importa: si no, quien arrastró el mapa ve bajar el número sin
+	 * entender por qué y piensa que se perdieron negocios. "En esta zona" explica
+	 * de dónde sale el recorte y, de paso, que alejando el mapa vuelven.
+	 */
+	countInArea: (total: number) =>
+		total === 1 ? '1 negocio en esta zona' : `${total} negocios en esta zona`,
+
 	/** El rubro sin elegir: la lista completa. */
 	allTypes: 'Todos',
 
@@ -45,5 +55,8 @@ export const explore = {
 	empty: {
 		filtered: 'No hay negocios de ese rubro por ahora.',
 		all: 'Todavía no hay negocios para mostrar.',
+
+		/** El mapa quedó sobre un lugar donde no hay ninguno. Se sale alejándolo. */
+		area: 'No hay negocios en esta zona. Probá alejando el mapa.',
 	},
 } as const;

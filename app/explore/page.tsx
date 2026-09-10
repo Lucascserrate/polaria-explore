@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { explore } from '@/content/explore';
-import { BusinessCard } from '@/features/explore/components/BusinessCard';
 import { BusinessTypeFilter } from '@/features/explore/components/BusinessTypeFilter';
 import { ExploreLayout } from '@/features/explore/components/ExploreLayout';
+import { readMapView } from '@/features/explore/map-url';
 import { fitView } from '@/features/explore/map-view';
 import { typeOptions } from '@/features/explore/type-options';
 import { listBusinesses } from '@/services/explore/server/businesses';
@@ -16,10 +16,10 @@ import { hasLocation } from '@/services/explore/types';
  * estática de este dominio es un slug menos disponible para un negocio, así que
  * `explore` está reservado del lado de la API (`RESERVED_SLUGS`).
  *
- * La página no dibuja: ordena. Pide la lista, decide qué rubro se está mirando
- * y arma las tres cosas que la pantalla necesita —las tarjetas, los chips y los
- * marcadores—. Lo único que no puede resolver acá es mostrar u ocultar el mapa,
- * que es estado del navegador y vive en `ExploreLayout`.
+ * La página no dibuja: ordena. Pide la lista, decide qué rubro se está mirando,
+ * calcula el encuadre del mapa y entrega las tres cosas a `ExploreLayout`. Lo
+ * que no puede resolver acá es qué negocios entran en la pantalla del mapa: eso
+ * depende de cuántos píxeles mide el panel, que sólo sabe el navegador.
  */
 export const metadata: Metadata = {
 	title: explore.metaTitle,
@@ -27,12 +27,14 @@ export const metadata: Metadata = {
 	alternates: { canonical: '/explore' },
 };
 
+type SearchParams = { rubro?: string; lat?: string; lng?: string; z?: string };
+
 export default async function ExplorePage({
 	searchParams,
 }: {
-	searchParams: Promise<{ rubro?: string }>;
+	searchParams: Promise<SearchParams>;
 }) {
-	const [{ rubro }, businesses] = await Promise.all([
+	const [params, businesses] = await Promise.all([
 		searchParams,
 		listBusinesses(),
 	]);
@@ -46,7 +48,9 @@ export default async function ExplorePage({
 	 * un buscador roto.
 	 */
 	const selected =
-		rubro && options.some((option) => option.type === rubro) ? rubro : null;
+		params.rubro && options.some((option) => option.type === params.rubro)
+			? params.rubro
+			: null;
 
 	const shown = selected
 		? businesses.filter((business) => business.businessType === selected)
@@ -54,23 +58,20 @@ export default async function ExplorePage({
 
 	const located = shown.filter(hasLocation);
 
+	/*
+	 * El encuadre lo manda la URL si lo trae —así un enlace compartido abre
+	 * donde lo dejaron— y si no, el que muestra a todos los negocios ubicados.
+	 */
+	const view =
+		readMapView(params) ?? fitView(located.map((business) => business.location));
+
 	return (
 		<ExploreLayout
-			count={shown.length}
-			filter={<BusinessTypeFilter options={options} selected={selected} />}
-			view={fitView(located.map((business) => business.location))}
+			businesses={shown}
 			located={located}
-			empty={
-				shown.length > 0
-					? undefined
-					: selected
-						? explore.empty.filtered
-						: explore.empty.all
-			}
-		>
-			{shown.map((business) => (
-				<BusinessCard key={business.slug} business={business} />
-			))}
-		</ExploreLayout>
+			filter={<BusinessTypeFilter options={options} selected={selected} />}
+			filtered={selected !== null}
+			view={view}
+		/>
 	);
 }

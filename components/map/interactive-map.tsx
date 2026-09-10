@@ -3,7 +3,7 @@
 // Sin esto, el canvas y los controles se dibujan sin estilos.
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import Map, {
 	Marker,
 	NavigationControl,
@@ -16,6 +16,29 @@ import { cn } from '@/lib/utils';
 export interface Coordinates {
 	latitude: number;
 	longitude: number;
+}
+
+/** El rectángulo que se está viendo, en grados. */
+export interface Bounds {
+	north: number;
+	south: number;
+	east: number;
+	west: number;
+}
+
+/**
+ * Lo que el mapa está mostrando, para quien necesite seguirlo.
+ *
+ * Van los límites **y** el centro con el zoom porque se usan para dos cosas
+ * distintas y ninguna se deriva bien de la otra: los límites deciden qué
+ * negocios entran en la lista, y el centro con el zoom es lo que se escribe en
+ * la URL. Calcular los límites desde el centro exigiría saber cuántos píxeles
+ * mide el panel, que es justo lo que el servidor no sabe.
+ */
+export interface Viewport {
+	bounds: Bounds;
+	center: Coordinates;
+	zoom: number;
 }
 
 /**
@@ -91,7 +114,7 @@ export function InteractiveMap({
 	className,
 	onSelect,
 	onDeselect,
-	onMoveEnd,
+	onViewportChange,
 	children,
 }: {
 	/** Dónde abre. Sólo se lee al montar; después manda el propio mapa. */
@@ -103,12 +126,57 @@ export function InteractiveMap({
 	/** Tocaron un marcador. */
 	onSelect?: (id: string) => void;
 	onDeselect?: () => void;
-	/** El mapa dejó de moverse: sirve para "buscar en esta zona". */
-	onMoveEnd?: (center: Coordinates) => void;
+	/**
+	 * El mapa se quedó quieto y esto es lo que se está viendo.
+	 *
+	 * Se dispara con `idle`, que es el único evento que cubre los tres casos que
+	 * importan con la misma cuenta: terminó de abrir, terminó un gesto, y cambió
+	 * de tamaño el contenedor. Escuchar `load` y `moveend` por separado deja
+	 * afuera justamente el tercero, que acá pasa seguido porque el panel del mapa
+	 * se muestra y se esconde.
+	 *
+	 * Quien lo reciba tiene que amortiguarlo: un zoom con la rueda son varios
+	 * `idle` seguidos.
+	 */
+	onViewportChange?: (viewport: Viewport) => void;
 	children?: ReactNode;
 }) {
 	const mapRef = useRef<MapRef | null>(null);
 	const boxRef = useRef<HTMLDivElement | null>(null);
+
+	/**
+	 * Lo que se está viendo, si es que se está viendo algo.
+	 *
+	 * El `if` del lienzo en cero no es defensivo porque sí: el mapa se monta
+	 * dentro de un contenedor en `display: none` —en el teléfono la lista abre
+	 * primero— y ahí `getBounds()` devuelve un rectángulo de área cero. Emitirlo
+	 * dejaría la lista de al lado sin un solo resultado antes de que nadie haya
+	 * visto el mapa. Cuando el contenedor aparece, el `ResizeObserver` mide y
+	 * vuelve a preguntar.
+	 */
+	const readViewport = useCallback(() => {
+		const map = mapRef.current;
+		if (!map || !onViewportChange) return;
+
+		const canvas = map.getCanvas();
+		if (!canvas.width || !canvas.height) return;
+
+		const bounds = map.getBounds();
+		if (!bounds) return;
+
+		const center = map.getCenter();
+
+		onViewportChange({
+			bounds: {
+				north: bounds.getNorth(),
+				south: bounds.getSouth(),
+				east: bounds.getEast(),
+				west: bounds.getWest(),
+			},
+			center: { latitude: center.lat, longitude: center.lng },
+			zoom: map.getZoom(),
+		});
+	}, [onViewportChange]);
 
 	/**
 	 * Volver a medir el contenedor cuando cambia de tamaño.
@@ -129,11 +197,20 @@ export function InteractiveMap({
 		const box = boxRef.current;
 		if (!box || typeof ResizeObserver === 'undefined') return;
 
-		const observer = new ResizeObserver(() => mapRef.current?.resize());
+		const observer = new ResizeObserver(() => {
+			mapRef.current?.resize();
+			/*
+			 * Y avisar qué se ve ahora, que es lo que acaba de cambiar. `resize()`
+			 * actualiza la vista en el momento pero no siempre dispara `idle`, así
+			 * que sin esto un panel que aparece deja la lista filtrada por los
+			 * límites que tenía cuando estaba escondido.
+			 */
+			readViewport();
+		});
 		observer.observe(box);
 
 		return () => observer.disconnect();
-	}, []);
+	}, [readViewport]);
 
 	useEffect(() => {
 		if (!flyTo) return;
@@ -184,12 +261,7 @@ export function InteractiveMap({
 				dragRotate={false}
 				pitchWithRotate={false}
 				touchPitch={false}
-				onMoveEnd={(event) =>
-					onMoveEnd?.({
-						latitude: event.viewState.latitude,
-						longitude: event.viewState.longitude,
-					})
-				}
+				onIdle={readViewport}
 				onClick={() => onDeselect?.()}
 			>
 				<NavigationControl position="top-right" showCompass={false} />

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { explore } from '@/content/explore';
 import { cn } from '@/lib/utils';
 import { BusinessTypeIcon } from '../business-type-icon';
@@ -21,6 +24,12 @@ export type BusinessTypeOption = { type: string; label: string };
  * el botón de atrás hace lo que tiene que hacer. `scroll={false}` porque el
  * filtro está arriba de todo y la página ya está donde tiene que estar.
  *
+ * **Cada enlace conserva el resto de la consulta**, que hoy es dónde está
+ * mirando el mapa. Por eso lee la URL en el navegador en lugar de recibirla
+ * dibujada: el encuadre lo reescribe el mapa con `replaceState` cada vez que se
+ * mueve, así que un `href` armado en el servidor quedaría viejo apenas alguien
+ * arrastra, y elegir un rubro devolvería el mapa a donde estaba al abrir.
+ *
  * El código del rubro viaja crudo en la URL a propósito: es el mismo valor que
  * guarda la API, así que no hay una tercera tabla de nombres bonitos que
  * mantener sincronizada.
@@ -32,6 +41,19 @@ export function BusinessTypeFilter({
 	options: BusinessTypeOption[];
 	selected: string | null;
 }) {
+	const search = useSearchParams();
+
+	const hrefFor = (type: string | null) => {
+		const params = new URLSearchParams(search.toString());
+
+		if (type) params.set('rubro', type);
+		else params.delete('rubro');
+
+		const query = params.toString();
+
+		return query ? `/explore?${query}` : '/explore';
+	};
+
 	if (options.length < 2) return null;
 
 	return (
@@ -41,7 +63,7 @@ export function BusinessTypeFilter({
 		>
 			<ul className="flex w-max gap-2 py-0.5">
 				<li>
-					<Chip href="/explore" active={!selected}>
+					<Chip href={hrefFor(null)} active={!selected}>
 						{explore.allTypes}
 					</Chip>
 				</li>
@@ -49,7 +71,7 @@ export function BusinessTypeFilter({
 				{options.map((option) => (
 					<li key={option.type}>
 						<Chip
-							href={`/explore?rubro=${option.type}`}
+							href={hrefFor(option.type)}
 							active={selected === option.type}
 						>
 							<BusinessTypeIcon type={option.type} className="size-4" />

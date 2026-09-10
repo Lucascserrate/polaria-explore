@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Popup } from 'react-map-gl/mapbox';
-import { InteractiveMap, type MapPin } from '@/components/map/interactive-map';
+import {
+	InteractiveMap,
+	type MapPin,
+	type Viewport,
+} from '@/components/map/interactive-map';
 import { useMediaQuery } from '@/lib/media-query';
 import type { LocatedBusiness } from '@/services/explore/types';
 import { BusinessTypeIcon } from '../business-type-icon';
@@ -11,6 +15,17 @@ import { MapPreviewCard } from './MapPreviewCard';
 
 /** El `lg` de Tailwind, que es donde la lista y el mapa dejan de turnarse. */
 const WIDE_SCREEN = '(min-width: 64rem)';
+
+/**
+ * Cuánto se espera después del último movimiento antes de avisar.
+ *
+ * El mapa avisa cuando se queda quieto, y en un zoom con la rueda eso pasa
+ * varias veces en un segundo. Este respiro junta esa ráfaga en un solo aviso,
+ * que es lo que evita que la lista de al lado se redibuje cinco veces mientras
+ * alguien todavía está acercando. Corto, porque cuando alguien suelta el mapa
+ * ya está esperando la lista nueva.
+ */
+const SETTLE_MS = 250;
 
 /**
  * El mapa del buscador, con lo que pasa al tocar un marcador.
@@ -38,19 +53,44 @@ export function ExploreMapView({
 	businesses,
 	view,
 	className,
+	onViewportChange,
 }: {
 	businesses: LocatedBusiness[];
 	view: MapView;
 	className?: string;
+	/** Qué se está viendo, ya amortiguado. Lo usa la lista y la URL. */
+	onViewportChange?: (viewport: Viewport) => void;
 }) {
 	const [openSlug, setOpenSlug] = useState<string | null>(null);
 	const wide = useMediaQuery(WIDE_SCREEN);
 
+	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const settle = useCallback(
+		(viewport: Viewport) => {
+			if (timer.current) clearTimeout(timer.current);
+
+			timer.current = setTimeout(
+				() => onViewportChange?.(viewport),
+				SETTLE_MS,
+			);
+		},
+		[onViewportChange],
+	);
+
+	// Sin esto, un aviso pendiente intenta actualizar la lista después de que la
+	// pantalla se desmontó.
+	useEffect(() => {
+		return () => {
+			if (timer.current) clearTimeout(timer.current);
+		};
+	}, []);
+
 	/*
 	 * El negocio se busca por slug en lugar de guardarlo entero: si la lista
-	 * cambia —alguien filtró por rubro— el que estaba abierto puede ya no estar,
-	 * y así la vista previa se cierra sola en vez de quedar mostrando un negocio
-	 * que la pantalla dejó de listar.
+	 * cambia —alguien filtró por rubro, o el mapa se movió— el que estaba abierto
+	 * puede ya no estar, y así la vista previa se cierra sola en vez de quedar
+	 * mostrando un negocio que la pantalla dejó de listar.
 	 */
 	const open = businesses.find((business) => business.slug === openSlug) ?? null;
 
@@ -79,15 +119,14 @@ export function ExploreMapView({
 				className={className}
 				onSelect={setOpenSlug}
 				onDeselect={close}
+				onViewportChange={settle}
 			>
 				{open && wide && (
 					<Popup
 						latitude={open.location.latitude}
 						longitude={open.location.longitude}
 						anchor="bottom"
-						/* Lo suficiente para no tapar el marcador del que salió. */
 						offset={20}
-						/* La cruz la dibuja la tarjeta; ver `explore-popup` en globals.css. */
 						closeButton={false}
 						closeOnClick={false}
 						maxWidth="256px"
