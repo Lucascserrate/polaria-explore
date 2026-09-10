@@ -45,13 +45,21 @@ const VISIBILITY = {
 export async function SiteHeader({
 	showFrom = 'always',
 	wide = false,
+	forBusiness = false,
 }: {
 	showFrom?: keyof typeof VISIBILITY;
 	/** De borde a borde. Ver `Navbar`. */
 	wide?: boolean;
+	/**
+	 * El botón "Para negocios". Sólo la raíz lo prende: es la puerta del
+	 * marketplace y no la página de un negocio. Ver `Navbar`.
+	 */
+	forBusiness?: boolean;
 }) {
 	const session = await getCustomerSession();
-	const navbar = <Navbar session={session} wide={wide} />;
+	const navbar = (
+		<Navbar session={session} wide={wide} forBusiness={forBusiness} />
+	);
 
 	if (showFrom === 'always') return navbar;
 

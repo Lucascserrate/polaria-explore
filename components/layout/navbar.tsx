@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui/container';
 import { Logo } from '@/components/layout/logo';
+import { Button } from '@/components/ui/button';
 import { account } from '@/content/account';
+import { site } from '@/config/site';
 import { CustomerMenu } from '@/components/layout/customer-menu';
 import type { CustomerSession } from '@/services/customer/types';
 
@@ -22,14 +24,21 @@ import type { CustomerSession } from '@/services/customer/types';
  *   metida en el local de otro, y el enlace más visible de la página llevaría
  *   fuera de ella justo cuando lo único que hay que hacer es reservar.
  *
- * Por eso a la derecha va sólo la cuenta, y sólo cuando hay sesión. El logo
- * lleva a la raíz, que hoy es un cartel y mañana es el buscador del
- * marketplace: es el lugar natural donde va a estar, y por eso esta barra vive
- * en el layout raíz y no en el grupo de la reserva.
+ * Por eso a la derecha va la cuenta —y sólo cuando hay sesión— y, si el layout
+ * lo pide, "Para negocios". **Ese botón no lo decide la barra sino quién la
+ * pone**, y de ahí que sea un prop apagado por defecto: en la raíz es legítimo
+ * —es la puerta del marketplace, ahí no hay reserva empezada ni local de nadie,
+ * y quien entra por la puerta bien puede ser un negocio— y en las páginas de
+ * reserva no entra. Con el prop apagado, la única forma de llegar a la landing
+ * desde la reserva sigue siendo la que ya había: el menú de la cuenta y la
+ * firma al pie.
+ *
+ * El logo lleva a la raíz, que es el buscador del marketplace.
  */
 export function Navbar({
 	session,
 	wide = false,
+	forBusiness = false,
 }: {
 	session: CustomerSession | null;
 	/**
@@ -42,6 +51,14 @@ export function Navbar({
 	 * —la raíz, la reserva— siguen con la barra centrada sobre ella.
 	 */
 	wide?: boolean;
+	/**
+	 * El botón "Para negocios", a la derecha.
+	 *
+	 * Apagado por defecto **a propósito**: la barra la usan las páginas de
+	 * reserva, y ahí este botón no va. Lo prende el layout de la raíz. Ver el
+	 * comentario de arriba y `AGENTS.md`.
+	 */
+	forBusiness?: boolean;
 }) {
 	return (
 		<header className="sticky top-0 z-50 border-b border-paper-300 bg-white">
@@ -55,7 +72,20 @@ export function Navbar({
 						<span className="sr-only">{account.nav.home}</span>
 					</Link>
 
-					{session && <CustomerMenu session={session} />}
+					<div className="flex items-center gap-2 sm:gap-3">
+						{forBusiness && (
+							<Button
+								href={site.landingUrl}
+								variant="secondary"
+								size="sm"
+								className="font-medium"
+							>
+								{account.forBusiness}
+							</Button>
+						)}
+
+						{session && <CustomerMenu session={session} />}
+					</div>
 				</nav>
 			</Container>
 		</header>

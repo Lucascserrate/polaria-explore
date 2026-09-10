@@ -14,6 +14,19 @@ export const account = {
 	},
 
 	/**
+	 * El único enlace del sitio que le habla al dueño de un negocio, y sale del
+	 * dominio: va a `business.polariahq.com`.
+	 *
+	 * Está en dos lugares y no en cualquiera. En la barra **de la raíz**, donde
+	 * es legítimo —quien entra por la puerta del marketplace puede ser un
+	 * negocio, y ahí no hay una reserva empezada que interrumpir— y dentro del
+	 * menú de la cuenta, detrás de un clic, que es como llega a las páginas de
+	 * reserva. Arriba de la reserva de una barbería no va: sería publicidad de
+	 * un tercero metida en el local de otro. Ver `Navbar` y `AGENTS.md`.
+	 */
+	forBusiness: 'Para negocios',
+
+	/**
 	 * El menú que cuelga del avatar.
 	 *
 	 * Corto a propósito: sólo lo que existe. La referencia que lo inspiró tiene
@@ -23,11 +36,6 @@ export const account = {
 	menu: {
 		/** Para el lector de pantalla: el avatar es el botón que abre el menú. */
 		open: 'Abrir el menú de tu cuenta',
-		/**
-		 * El único enlace del sitio que le habla al dueño de un negocio, y por eso
-		 * vive acá adentro y no en la barra. Va a `business.polariahq.com`.
-		 */
-		forBusiness: 'Para negocios',
 	},
 
 	bar: {

@@ -20,7 +20,7 @@ sobre software, estás en el repositorio equivocado.
 de arriba (`components/layout/navbar.tsx`) comparte la forma con la de
 `polaria-landing` —misma marca, misma altura, misma línea de 1px— y no su
 contenido: el logo lleva a la raíz y a la derecha va la cuenta de quien reserva
-cuando hay sesión. Nada más.
+cuando hay sesión, más "Para negocios" **si el layout lo pide**.
 
 **La barra no está en el layout raíz**, aunque sea del dominio y no de una
 pantalla. Vivía ahí hasta que apareció el buscador, que la quiere sólo en
@@ -30,12 +30,22 @@ Ahora la pone `app/(site)/layout.tsx` para la raíz y las reservas, y
 `app/explore/layout.tsx` escondida bajo `lg`. El documento (`app/layout.tsx`)
 no impone ningún encabezado.
 
-Lo que sigue prohibido es lo de siempre, y es la parte que importa: ningún
-enlace ni botón que le hable al dueño de un negocio. Un "Probá Polaria gratis"
-arriba de la reserva de una barbería es publicidad de un tercero metida en el
-local de otro, y sería el enlace más visible de la página justo cuando lo único
-que hay que hacer es reservar. La única mención de ese tipo es la firma al pie
-de la reserva, que enlaza a la landing (`site.landingUrl`).
+Lo que sigue prohibido es lo de siempre, y es la parte que importa: **en la
+página de un negocio, ningún enlace ni botón que le hable a su dueño.** Un
+"Probá Polaria gratis" arriba de la reserva de una barbería es publicidad de un
+tercero metida en el local de otro, y sería el enlace más visible de la página
+justo cuando lo único que hay que hacer es reservar. Ahí Polaria aparece dos
+veces y las dos chicas: la firma al pie (`site.landingUrl`) y "Para negocios"
+dentro del menú de la cuenta, detrás de un clic.
+
+**La raíz es la excepción, y por qué lo es importa.** `/` es la puerta del
+marketplace: no es la página de nadie, no hay una reserva empezada que
+interrumpir, y quien entra por la puerta bien puede ser un negocio que vino a
+ver de qué se trata. Por eso ahí "Para negocios" está a la vista, arriba a la
+derecha, y lleva a `site.landingUrl` (`business.polariahq.com`). No lo decide la
+barra sino quién la pone: `forBusiness` es un prop **apagado por defecto** que
+sólo prende `app/(site)/layout.tsx`. Si aparece prendido en el grupo de las
+reservas, está mal.
 
 ## Comandos
 
@@ -72,22 +82,25 @@ arreglar para levantar el sitio**, y en desarrollo se puede trabajar sin él.
 
 | Ruta               | Estado      | Quién la lee                        |
 | ------------------ | ----------- | ----------------------------------- |
-| `/`                | provisional | Un cartel. Va a ser la entrada.     |
+| `/`                | en pie      | **La entrada: el buscador**         |
 | `/explore`         | en pie      | **Quien todavía no eligió negocio** |
 | `/[businessSlug]`  | en pie      | **El cliente de ese negocio**       |
 | `/api/booking/...` | en pie      | Nadie: pasamanos hacia la API       |
 | `/api/map/[slug]`  | en pie      | Nadie: la imagen del mapa           |
 
-`app/page.tsx` es un cartel provisional, no una landing: existe para que la raíz
-del dominio no sea un 404 —las páginas de reserva cuelgan de ella y alguien va a
-borrar el slug de la barra de direcciones para ver qué hay más arriba—. El copy
-está en `content/home.ts` y se reemplaza entero cuando llegue la barra de
-búsqueda, que es lo que va a vivir ahí.
+**`app/(site)/page.tsx` dejó de ser un cartel.** Es la entrada: un titular, el
+campo que baja la lista de rubros y esos mismos rubros como enlaces debajo. No
+es una landing —no vende nada y no le habla al dueño de un negocio, salvo el
+botón de la barra— y no es una pantalla de resultados: de acá se sale a
+`/explore` con un rubro elegido, o directo a la página de un negocio cuando se
+lo encontró por su nombre. El copy está en `content/home.ts`. Ver "La entrada"
+más abajo.
 
 **`/explore` es la pantalla de resultados, no la entrada.** Lista los negocios
-publicados con un mapa al lado, filtra por rubro con la URL
-(`/explore?rubro=BARBERSHOP`) y no busca nada todavía: no hay dónde escribir.
-Cuando la raíz tenga su barra, va a mandar acá. Ver "El buscador" más abajo.
+publicados con un mapa al lado y filtra por rubro con la URL
+(`/explore?rubro=BARBERSHOP`), que es a donde manda el campo de la raíz. Buscar
+por texto sigue sin existir de este lado: la API no lo sabe hacer todavía. Ver
+"El buscador" más abajo.
 
 **Los negocios van en la raíz** (`/royal-barber`, no `/n/royal-barber`), así que
 los nombres que use el sitio siguen estando reservados del lado del backend
@@ -191,6 +204,39 @@ services/booking/
   —servicio → profesional → fecha y hora → datos— porque son los datos que el
   backend necesita, en el orden en que dejan de ser ambiguos.
 
+## La entrada (`/`)
+
+- **El campo se aprieta y baja una lista de rubros; no es un cursor esperando
+  una palabra.** Es lo que hacen los marketplaces de citas y acá tiene una razón
+  de más: quien llega no sabe qué escribir —"corte", "fade", "barbería" y
+  "peluquería" son la misma intención— y la API sabe filtrar por rubro pero
+  todavía no por texto. Un rubro elegido de la lista es una búsqueda que existe.
+- **Escribir acorta la lista y encuentra negocios por nombre.** Los nombres ya
+  llegaron todos en el render del servidor, así que buscar entre ellos no le pide
+  nada a nadie: son veinte comparaciones sin acentos y en minúsculas. Un negocio
+  encontrado por su nombre **no** va a los resultados, va a su página: quien ya
+  sabe a dónde quiere ir no tiene por qué pasar por una lista de uno.
+- **Los rubros que se ofrecen son los que existen**, igual que en `/explore` y
+  por lo mismo: salen de los negocios cargados (`typeOptions`) y no del catálogo.
+  Con menos de dos, la lista de rubros se cae y su lugar lo ocupan los negocios
+  —"Todos los negocios" y un único rubro son la misma lista dos veces— para que
+  apretar el campo no abra un panel de un solo renglón.
+- **Todavía no hay "dónde" ni "cuándo".** La referencia tiene tres casilleros;
+  dos de ellos acá serían decoración, porque la API no filtra por zona ni por
+  fecha. Ver "Pendientes".
+- **Los rubros aparecen dos veces, y una de las dos es la que funciona sin
+  JavaScript.** El panel del campo necesita estado; la fila de píldoras de abajo
+  son enlaces dibujados en el servidor. Y el campo es un `<form action="/explore">`
+  de verdad: con JavaScript nunca se envía —`onSubmit` cancela y navega a la fila
+  elegida—, sin JavaScript lleva a la lista completa. Ninguna parte de esta
+  pantalla termina en un callejón sin salida.
+- **La raíz y `/explore` piden la misma lista**, con el mismo caché de cinco
+  minutos (`listBusinesses`), así que entrar por la puerta y pasar a los
+  resultados es una sola petición a la API.
+- **La píldora de un rubro es `components/ui/chip.tsx`**, compartida con el
+  filtro de `/explore`: son el mismo control antes y después de elegir, y dos
+  copias de esas clases terminan siendo dos alturas distintas.
+
 ## El buscador (`/explore`)
 
 - **La lista la trae el servidor y no pasa por React Query.**
@@ -228,8 +274,12 @@ services/booking/
   marcador en escritorio, una tarjeta al pie en el teléfono— y se dibuja **una**
   de las dos, elegida con `useMediaQuery`: dibujar las dos y esconder una
   dejaría la misma tarjeta dos veces en el HTML.
-- **Los iconos de rubro son de `lucide-react`**, la misma librería que el panel.
-  Nunca reemplazan a la etiqueta: ninguno de esos dibujos dice "depilación" solo.
+- **Los iconos de rubro son Material Symbols rellenos** (`react-icons/md`), y no
+  los de contorno del resto de la interfaz: un trazo de 1,75px dentro de un
+  marcador de 14px es una mancha gris con agujeros. La chapa de Polaria —lupa,
+  flechas, mapa— sigue siendo `lucide-react`, que es lo que usa el panel. Ver
+  `features/explore/business-type-icon.tsx`. Ninguno reemplaza a la etiqueta:
+  ninguno de esos dibujos dice "depilación" solo.
 
 ## Reglas del proyecto
 
@@ -248,9 +298,13 @@ services/booking/
   sí la de la raíz y la de cualquier ruta nueva del dominio. Hay que
   reemplazarla por una neutra. `app/icon.tsx` arrastra el mismo azul
   (`#0b50e8`).
-- **La entrada del buscador.** `/explore` lista y filtra por rubro, pero no hay
-  dónde escribir: falta la barra de búsqueda de la raíz, y con ella buscar por
-  nombre, por zona y "buscar en esta área" cuando se mueve el mapa.
+- **Buscar por zona, y por texto de verdad.** La raíz ya tiene su campo, pero lo
+  que hace es elegir un rubro o encontrar un negocio por su nombre entre los que
+  ya llegaron al navegador. Falta lo que necesita a la API: buscar por servicio
+  ("corte de barba"), filtrar por zona, y "buscar en esta área" cuando se mueve
+  el mapa. Los dos casilleros de la referencia —dónde y cuándo— entran al campo
+  el día que la API sepa contestarlos, y no antes: un "Ubicación actual" que no
+  cambia los resultados es una promesa que incumple la pantalla siguiente.
 - **El sitemap no lista los negocios.** Ahora la API sabe enumerarlos
   (`listBusinesses`), así que es una línea; es una decisión aparte porque listar
   a un negocio ahí es pedirle a Google que lo indexe.

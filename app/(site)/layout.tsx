@@ -12,7 +12,7 @@ export default function SiteLayout({
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
 		<>
-			<SiteHeader />
+			<SiteHeader forBusiness />
 			{children}
 		</>
 	);

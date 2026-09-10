@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Chip } from '@/components/ui/chip';
 import { explore } from '@/content/explore';
-import { cn } from '@/lib/utils';
 import { BusinessTypeIcon } from '../business-type-icon';
 
 /** Un rubro que de verdad tiene negocios en la lista. */
@@ -23,6 +22,10 @@ export type BusinessTypeOption = { type: string; label: string };
  * navegador: son enlaces, así que andan sin JavaScript, se pueden compartir y
  * el botón de atrás hace lo que tiene que hacer. `scroll={false}` porque el
  * filtro está arriba de todo y la página ya está donde tiene que estar.
+ *
+ * La píldora es `components/ui/chip.tsx`, compartida con la fila de rubros de
+ * la raíz: son el mismo control antes y después de elegir, y tienen que verse
+ * igual.
  *
  * **Cada enlace conserva el resto de la consulta**, que hoy es dónde está
  * mirando el mapa. Por eso lee la URL en el navegador en lugar de recibirla
@@ -63,7 +66,7 @@ export function BusinessTypeFilter({
 		>
 			<ul className="flex w-max gap-2 py-0.5">
 				<li>
-					<Chip href={hrefFor(null)} active={!selected}>
+					<Chip href={hrefFor(null)} active={!selected} scroll={false}>
 						{explore.allTypes}
 					</Chip>
 				</li>
@@ -73,6 +76,7 @@ export function BusinessTypeFilter({
 						<Chip
 							href={hrefFor(option.type)}
 							active={selected === option.type}
+							scroll={false}
 						>
 							<BusinessTypeIcon type={option.type} className="size-4" />
 							{option.label}
@@ -81,32 +85,6 @@ export function BusinessTypeFilter({
 				))}
 			</ul>
 		</nav>
-	);
-}
-
-function Chip({
-	href,
-	active,
-	children,
-}: {
-	href: string;
-	active: boolean;
-	children: React.ReactNode;
-}) {
-	return (
-		<Link
-			href={href}
-			scroll={false}
-			aria-current={active ? 'true' : undefined}
-			className={cn(
-				'flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm whitespace-nowrap transition-colors',
-				active
-					? 'border-ink-950 bg-ink-950 text-paper-50'
-					: 'border-paper-300 text-ink-700 hover:border-paper-400 hover:bg-paper-200',
-			)}
-		>
-			{children}
-		</Link>
 	);
 }
 

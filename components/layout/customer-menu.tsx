@@ -21,9 +21,11 @@ import { MenuDismiss } from './menu-dismiss';
  * peor que uno corto. "Mis reservas" entra acá el día que exista.
  *
  * "Para negocios" va al final, separado y detrás de un clic. Es el único
- * enlace del sitio que le habla al dueño de un negocio, y por eso no está en la
- * barra: ahí sería el enlace más visible de la página del local de otro. Ver
- * `AGENTS.md`.
+ * enlace del sitio que le habla al dueño de un negocio: en la barra de la raíz
+ * está a la vista —ahí es la puerta del marketplace y no la página de nadie—,
+ * pero este menú también aparece arriba de la reserva de una barbería, y ahí
+ * suelto sería el enlace más visible del local de otro. Detrás de un clic sigue
+ * estando para quien lo busca. Ver `Navbar` y `AGENTS.md`.
  */
 export function CustomerMenu({ session }: { session: CustomerSession }) {
 	return (
@@ -88,7 +90,7 @@ export function CustomerMenu({ session }: { session: CustomerSession }) {
 						href={site.landingUrl}
 						className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium text-ink-900 hover:bg-paper-200"
 					>
-						{account.menu.forBusiness}
+						{account.forBusiness}
 						<svg
 							aria-hidden="true"
 							viewBox="0 0 24 24"
