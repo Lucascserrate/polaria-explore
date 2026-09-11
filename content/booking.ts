@@ -48,6 +48,16 @@ export const booking = {
 		photoAlt: (name: string, index: number, total: number) =>
 			`Foto ${index} de ${total} de ${name}`,
 	},
+	portfolio: {
+		title: 'Portfolio',
+		/** Cuántos trabajos hay, al lado del título. */
+		count: (total: number) => String(total),
+		open: 'Ver el trabajo más grande',
+		/** En la última baldosa, cuando quedan trabajos sin mostrar. */
+		more: (hidden: number) => `+${hidden}`,
+		photoAlt: (name: string, index: number, total: number) =>
+			`Trabajo ${index} de ${total} de ${name}`,
+	},
 	share: {
 		imageAlt: 'La foto de portada del negocio',
 	},

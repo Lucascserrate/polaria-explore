@@ -66,6 +66,14 @@ export type PublicBusinessProfile = {
 	name: string;
 	businessType: string | null;
 	photos: PublicPhoto[];
+	/**
+	 * Trabajos terminados, aparte de las fotos del local.
+	 *
+	 * Dos colecciones y no una porque contestan cosas distintas: la galería de
+	 * arriba muestra cómo es el lugar, y esto cómo cortan. Vacío es lo normal y
+	 * significa que el negocio no subió trabajos: la sección no se dibuja.
+	 */
+	portfolio: PublicPhoto[];
 	team: PublicStaff[];
 	timezone: string;
 	/** ISO 4217. Los precios se formatean con esto, no con una moneda fija. */

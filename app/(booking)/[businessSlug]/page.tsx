@@ -10,6 +10,7 @@ import {
 import { BookingSidebar } from '@/features/booking/components/BookingSidebar';
 import { BackButton } from '@/features/booking/components/BackButton';
 import { BusinessGallery } from '@/features/booking/components/BusinessGallery';
+import { PortfolioPanel } from '@/features/booking/components/PortfolioPanel';
 import { BusinessHeader } from '@/features/booking/components/BusinessHeader';
 import {
 	LocationPanel,
@@ -94,6 +95,12 @@ export default async function BusinessBookingPage({ params }: Props) {
 
 							<SchedulePanel profile={profile} />
 							<TeamPanel profile={profile} />
+							{/*
+							 * Después del equipo y antes de la ubicación: los trabajos son el
+							 * argumento para venir, y la dirección es lo que se mira recién
+							 * cuando ya se decidió.
+							 */}
+							<PortfolioPanel profile={profile} />
 							<LocationPanel profile={profile} />
 						</div>
 
