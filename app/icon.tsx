@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
-/** Favicon: el glifo de estrella polar sobre el azul de marca. */
+/** Favicon: el glifo de estrella polar sobre el negro de marca. */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -14,7 +14,7 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#0b50e8",
+          backgroundColor: "#111111",
           borderRadius: 7,
         }}
       >
