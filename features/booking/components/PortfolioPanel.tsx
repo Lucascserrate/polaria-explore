@@ -9,24 +9,30 @@ import { PhotoViewer } from './PhotoViewer';
 /**
  * Cuántos trabajos se ven antes de abrir el visor.
  *
- * Nueve llena tres filas de tres en el teléfono y dos de cinco desde `sm`, así
- * que la sección no pasa a ser una tira interminable con treinta fotos. El
- * resto no se esconde: la última baldosa lleva el "+N" y abre el visor, que es
- * donde están todas.
+ * Nueve es el número que cierra el mosaico: la grande ocupa dos por dos, cuatro
+ * chicas completan esas dos filas y otras cuatro forman la tercera. Con menos
+ * queda un hueco en la grilla; con más, una fila suelta. El resto no se
+ * esconde: la última baldosa lleva el "+N" y abre el visor, que las tiene
+ * todas.
  */
 const VISIBLE = 9;
 
 /**
  * El portfolio del negocio: los trabajos terminados.
  *
- * Baldosas todas iguales y no un mosaico con una foto grande, al revés que la
- * galería de arriba. Es deliberado: acá ninguna foto es la principal —son
- * treinta cortes y valen lo mismo— y un destacado repetiría el gesto que ya
- * hace la portada del local a unos centímetros, compitiendo con ella.
+ * Mosaico con una foto destacada y ocho chicas alrededor. El destacado le da
+ * peso a la sección —sin él se lee como una tira de miniaturas de relleno— y
+ * deja que un buen trabajo cargue con la presentación.
  *
- * Cuadradas porque llegan de cualquier lado —un teléfono en vertical, una
- * captura de Instagram— y una grilla que respetara cada proporción se vería
- * como un recorte de diario. El visor las muestra completas.
+ * Cuál es la grande no se elige: es la primera de la lista, y el portfolio
+ * llega ordenado de lo más nuevo a lo más viejo. Así el corte de esta semana
+ * encabeza sin que el negocio tenga que administrar nada. Ver
+ * `BusinessPhotosService.list`.
+ *
+ * Las baldosas son cuadradas porque las fotos llegan de cualquier lado —un
+ * teléfono en vertical, una captura de Instagram— y una grilla que respetara
+ * cada proporción se vería como un recorte de diario. El visor las muestra
+ * completas.
  */
 export function PortfolioPanel({
 	profile,
@@ -58,13 +64,23 @@ export function PortfolioPanel({
 					</span>
 				</div>
 
-				<ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+				{/*
+				 * Cuatro columnas, y la primera baldosa ocupa dos por dos. Las cuatro
+				 * que siguen caen solas a su derecha y las cuatro últimas forman la
+				 * fila de abajo: la grilla lo resuelve sin que haya que ubicar cada
+				 * una. Mismo armado en el teléfono, sólo que más chico.
+				 */}
+				<ul className="grid grid-cols-4 gap-2">
 					{visible.map((photo, position) => {
 						const isLast = position === visible.length - 1;
 						const showsMore = isLast && hidden > 0;
+						const isFeatured = position === 0;
 
 						return (
-							<li key={photo.id}>
+							<li
+								key={photo.id}
+								className={isFeatured ? 'col-span-2 row-span-2' : undefined}
+							>
 								<button
 									type="button"
 									aria-label={
@@ -84,12 +100,22 @@ export function PortfolioPanel({
 										)}
 										fill
 										/*
-										 * Las baldosas son chicas: un tercio del ancho en el
-										 * teléfono y un quinto del contenedor desde `sm`, que topa
-										 * en 72rem. Sin declararlo, el navegador baja la imagen
-										 * completa para mostrarla a 120px.
+										 * La destacada mide la mitad del contenedor y las chicas un
+										 * cuarto. Declararlo es lo que hace que el navegador pida
+										 * el tamaño que va a usar: sin esto baja la imagen entera
+										 * para mostrarla a 120px.
 										 */
-										sizes="(min-width: 1280px) 14rem, (min-width: 640px) 20vw, 33vw"
+										sizes={
+											isFeatured
+												? '(min-width: 1280px) 36rem, 50vw'
+												: '(min-width: 1280px) 18rem, 25vw'
+										}
+										/*
+										 * Solo la destacada con prioridad: es la más grande de la
+										 * sección. Pedir las nueve a la vez las pone a competir y
+										 * ninguna llega antes.
+										 */
+										priority={isFeatured}
 										className="object-cover"
 									/>
 
