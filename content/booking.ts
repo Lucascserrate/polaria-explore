@@ -109,6 +109,21 @@ export const booking = {
 		back: 'Volver',
 
 		/**
+		 * El título de la pestaña mientras se reserva.
+		 *
+		 * **El nombre del negocio primero**, porque una pestaña muestra cuatro
+		 * palabras y la que importa es dónde está reservando: quien llega acá
+		 * suele tener abiertas la barbería, el mapa y el chat donde le pasaron el
+		 * enlace. "Reservar" va detrás y sólo para distinguirla de la pestaña de
+		 * la página del negocio, que lleva el nombre a secas.
+		 *
+		 * No dice el paso. El paso cambia cuatro veces en un minuto y la pestaña
+		 * no es una barra de progreso; además el título quedaría distinto en cada
+		 * dirección del mismo formulario.
+		 */
+		metaTitle: (business: string) => `${business} · Reservar`,
+
+		/**
 		 * Los nombres de los pasos, para las migas de arriba.
 		 *
 		 * Sustantivos y no órdenes —"Profesional", no "Elegí un profesional"—:
