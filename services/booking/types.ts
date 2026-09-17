@@ -34,6 +34,14 @@ export type PublicService = {
 	name: string;
 	description: string | null;
 	price: number;
+	/**
+	 * La moneda de `price`, en ISO 4217.
+	 *
+	 * Es del servicio y no del negocio: un catálogo puede cobrar una consulta
+	 * presencial en bolivianos y una sesión online en dólares. El `currency` del
+	 * perfil quedó como la moneda por defecto, para escribir un cero.
+	 */
+	currency: string;
 	durationMinutes: number;
 };
 
@@ -94,6 +102,8 @@ export type PublicBookingConfirmation = {
 	serviceName: string;
 	staffName: string | null;
 	price: number;
+	/** La moneda de `price`, la del servicio reservado. */
+	currency: string;
 	durationMinutes: number;
 };
 

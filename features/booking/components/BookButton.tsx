@@ -56,11 +56,7 @@ export function ServiceList({ profile }: { profile: PublicBusinessProfile }) {
 		<ul className="space-y-3">
 			{profile.services.map((service) => (
 				<li key={service.id}>
-					<ServiceRow
-						service={service}
-						slug={profile.slug}
-						currency={profile.currency}
-					/>
+					<ServiceRow service={service} slug={profile.slug} />
 				</li>
 			))}
 		</ul>
@@ -70,11 +66,9 @@ export function ServiceList({ profile }: { profile: PublicBusinessProfile }) {
 function ServiceRow({
 	service,
 	slug,
-	currency,
 }: {
 	service: PublicService;
 	slug: string;
-	currency: string;
 }) {
 	return (
 		<div
@@ -89,7 +83,7 @@ function ServiceRow({
 					{formatDuration(service.durationMinutes)}
 				</p>
 				<p className="mt-2 font-semibold tabular-nums">
-					{formatPrice(service.price, currency)}
+					{formatPrice(service.price, service.currency)}
 				</p>
 			</div>
 

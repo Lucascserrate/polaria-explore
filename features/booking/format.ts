@@ -23,6 +23,38 @@ import type { BusinessStatus } from "@/services/booking/types";
 const LOCALE = "es-BO";
 
 /**
+ * El locale con el que se escribe cada moneda.
+ *
+ * Es la única excepción a `LOCALE`, y no es capricho: **el símbolo lo elige el
+ * locale, no la moneda**. Con `es-BO`, un precio en pesos colombianos se imprime
+ * "COP 45.000"; con `es-CO`, "$ 45.000". Las fechas sí siguen usando `LOCALE`,
+ * porque ahí no hay nada que cambie según el país del negocio.
+ *
+ * Los códigos son los mismos que valida el backend. Una moneda que no esté acá
+ * cae al locale del sitio: imprime el código en vez del símbolo, que es feo pero
+ * legible.
+ */
+const PRICE_LOCALES: Record<string, string> = {
+  ARS: "es-AR",
+  BOB: "es-BO",
+  BRL: "pt-BR",
+  CLP: "es-CL",
+  COP: "es-CO",
+  CRC: "es-CR",
+  DOP: "es-DO",
+  EUR: "es-ES",
+  GTQ: "es-GT",
+  HNL: "es-HN",
+  MXN: "es-MX",
+  NIO: "es-NI",
+  PEN: "es-PE",
+  PYG: "es-PY",
+  USD: "en-US",
+  UYU: "es-UY",
+  VES: "es-VE",
+};
+
+/**
  * Precio con la moneda del negocio, sin centavos.
  *
  * Los centavos sólo agregan ruido en una lista de servicios: nadie cobra
@@ -30,8 +62,10 @@ const LOCALE = "es-BO";
  * los mensajes de WhatsApp.
  */
 export function formatPrice(amount: number, currency: string): string {
+  const locale = PRICE_LOCALES[currency] ?? LOCALE;
+
   try {
-    return new Intl.NumberFormat(LOCALE, {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
@@ -39,7 +73,7 @@ export function formatPrice(amount: number, currency: string): string {
   } catch {
     // Un código de moneda inválido haría explotar `Intl`. Antes que romper la
     // página entera, se muestra el número solo.
-    return new Intl.NumberFormat(LOCALE, {
+    return new Intl.NumberFormat(locale, {
       maximumFractionDigits: 0,
     }).format(amount);
   }

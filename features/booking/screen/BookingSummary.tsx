@@ -47,7 +47,7 @@ export function BookingSummary({
 								</p>
 							</div>
 							<p className="shrink-0 font-medium tabular-nums">
-								{formatPrice(service.price, profile.currency)}
+								{formatPrice(service.price, service.currency)}
 							</p>
 						</div>
 
@@ -66,7 +66,7 @@ export function BookingSummary({
 					<div className="flex items-center justify-between gap-4 border-t border-paper-300 pt-4">
 						<p className="font-medium">{booking.flow.summary.total}</p>
 						<p className="font-semibold tabular-nums">
-							{formatPrice(service.price, profile.currency)}
+							{formatPrice(service.price, service.currency)}
 						</p>
 					</div>
 				)}

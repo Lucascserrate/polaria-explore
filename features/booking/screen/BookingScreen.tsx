@@ -9,13 +9,12 @@ import type { CustomerSession } from '@/services/customer/types';
 import type { PublicBusinessProfile } from '@/services/booking/types';
 import { useBookingFlow } from '../useBookingFlow';
 import {
-	ConfirmStep,
-	DoneStep,
 	ServiceStep,
-	SignInStep,
 	SlotStep,
 	StaffStep,
-} from '../components/BookingSteps';
+} from '../components/SelectionSteps';
+import { ConfirmStep } from '../components/ConfirmStep';
+import { DoneStep } from '../components/DoneStep';
 import { BookingBreadcrumbs } from './BookingBreadcrumbs';
 import { BookingSummary } from './BookingSummary';
 import { PhoneDialog } from './PhoneDialog';
@@ -209,7 +208,15 @@ function Step({
 			);
 
 		case 'confirm':
-			return state.session ? (
+			/*
+			 * Siempre el mismo paso, con cuenta o sin ella.
+			 *
+			 * Antes acá se bifurcaba a un login, y sin cuenta el camino terminaba:
+			 * quien no quería una, o a quien Google le falló, no tenía forma de
+			 * reservar. `ConfirmStep` resuelve las dos caras y deja a Google como
+			 * atajo, no como peaje.
+			 */
+			return (
 				<ConfirmStep
 					profile={profile}
 					session={state.session}
@@ -223,8 +230,6 @@ function Step({
 					onAskPhone={onAskPhone}
 					onConfirm={flow.confirm}
 				/>
-			) : (
-				<SignInStep />
 			);
 
 		case 'done':

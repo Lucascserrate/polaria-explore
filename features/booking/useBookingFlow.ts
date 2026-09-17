@@ -295,18 +295,34 @@ export function useBookingFlow(
 	);
 
 	/**
-	 * Confirma la reserva. No lleva datos de quien reserva: los toma la API de la
-	 * sesión, que es la única fuente que no se puede falsear desde el navegador.
+	 * Confirma la reserva.
+	 *
+	 * Con sesión no lleva datos de quien reserva: los toma la API de la cuenta,
+	 * que es la única fuente que no se puede falsear desde el navegador. Sin
+	 * sesión llegan escritos, y es el camino que evita perder a alguien que nunca
+	 * quiso una cuenta —o que no pudo entrar porque Google falló—.
+	 *
+	 * Los campos se omiten y no se mandan vacíos cuando hay cuenta: `@IsOptional`
+	 * del backend deja pasar lo ausente, no lo vacío.
 	 */
-	const confirm = useCallback(() => {
-		if (!service || !slot) return;
+	const confirm = useCallback(
+		(identity?: { name: string; phone: string }) => {
+			if (!service || !slot) return;
 
-		create.mutate({
-			serviceId: service.id,
-			staffId: staff?.id,
-			startTime: slot.startTime,
-		});
-	}, [create, service, slot, staff]);
+			create.mutate({
+				serviceId: service.id,
+				staffId: staff?.id,
+				startTime: slot.startTime,
+				...(identity
+					? {
+							customerName: identity.name.trim(),
+							customerPhone: identity.phone.trim(),
+						}
+					: {}),
+			});
+		},
+		[create, service, slot, staff],
+	);
 
 	/* --- Lo que ve la pantalla --------------------------------------------- */
 

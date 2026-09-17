@@ -163,21 +163,17 @@ export const booking = {
 		},
 
 		/**
-		 * El último paso, cuando hay que identificarse.
+		 * Entrar con Google es un atajo, no un requisito.
 		 *
-		 * Se pide cuenta y no nombre y teléfono a mano, y el texto tiene que
-		 * explicar por qué en una línea: quien llega hasta acá quiere un turno, no
-		 * registrarse. Lo que se le ofrece a cambio es no volver a escribir sus
-		 * datos nunca más, en este negocio ni en ningún otro de Polaria.
+		 * Se ofrece **debajo** del formulario y no antes: pedir una cuenta para
+		 * reservar un corte pierde clientes, y más todavía cuando el login de
+		 * Google falla —pasa— y la única salida era abandonar. Lo que se gana se
+		 * dice igual, porque para quien vuelve seguido es un gasto de menos.
 		 */
 		identity: {
-			title: 'Confirmá quién sos',
-			/** Lo que se gana iniciando sesión, dicho antes de pedirlo. */
+			or: 'o',
 			why: 'Entrá con Google y no vuelvas a escribir tus datos: quedan guardados para la próxima, acá y en cualquier negocio de Polaria.',
 			google: 'Continuar con Google',
-			/** No es un requisito de Polaria: es cómo se avisa de un turno. */
-			whatsappNote:
-				'También podés reservar escribiéndole al negocio por WhatsApp.',
 		},
 
 		/** Pedir el teléfono, lo único que Google no da. */
