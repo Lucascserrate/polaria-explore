@@ -24,8 +24,8 @@ import type { CustomerSession } from '@/services/customer/types';
  *   metida en el local de otro, y el enlace más visible de la página llevaría
  *   fuera de ella justo cuando lo único que hay que hacer es reservar.
  *
- * Por eso a la derecha va la cuenta —y sólo cuando hay sesión— y, si el layout
- * lo pide, "Para negocios". **Ese botón no lo decide la barra sino quién la
+ * Por eso a la derecha va la cuenta —la de quien reserva— y, si el layout lo
+ * pide, "Para negocios". **Ese botón no lo decide la barra sino quién la
  * pone**, y de ahí que sea un prop apagado por defecto: en la raíz es legítimo
  * —es la puerta del marketplace, ahí no hay reserva empezada ni local de nadie,
  * y quien entra por la puerta bien puede ser un negocio— y en las páginas de
@@ -65,7 +65,7 @@ export function Navbar({
 			<Container className={wide ? 'max-w-none' : 'max-w-6xl'}>
 				<nav
 					aria-label={account.nav.label}
-					className="flex h-16 items-center justify-between gap-6 sm:h-18"
+					className="flex h-16 items-center justify-between gap-3 sm:h-18 sm:gap-6"
 				>
 					<Link href="/" className="flex shrink-0 rounded-full">
 						<Logo />
@@ -73,18 +73,61 @@ export function Navbar({
 					</Link>
 
 					<div className="flex items-center gap-2 sm:gap-3">
+						{/*
+						 * "Para negocios" es un enlace de texto y no una píldora, y eso
+						 * pasó a importar cuando apareció "Acceder" al lado: dos píldoras
+						 * blancas iguales no dicen cuál es la de quien vino a reservar, que
+						 * es todo el mundo menos la excepción. Sigue estando a la vista
+						 * arriba a la derecha —lo que `AGENTS.md` pide de la raíz—, pero es
+						 * el más callado de los dos, que es el orden correcto: le habla al
+						 * dueño de un negocio y se va del dominio.
+						 *
+						 * De paso es lo que hace entrar las dos cosas en un teléfono
+						 * angosto: un enlace mide lo que dice, una píldora mide eso más
+						 * dos paddings.
+						 */}
 						{forBusiness && (
-							<Button
+							<a
 								href={site.landingUrl}
-								variant="secondary"
-								size="sm"
-								className="font-medium"
+								className="shrink-0 rounded-full px-1 text-sm font-medium text-ink-700 transition-colors hover:text-ink-950"
 							>
 								{account.forBusiness}
-							</Button>
+							</a>
 						)}
 
-						{session && <CustomerMenu session={session} />}
+						{/*
+						 * Con sesión, la cuenta; sin sesión, la puerta para entrar a ella.
+						 *
+						 * Antes acá no había nada sin sesión y la única forma de entrar era
+						 * el atajo de Google del paso de identidad, o sea que había que
+						 * empezar a reservar para poder acceder. Quien ya tiene cuenta no
+						 * viene a eso: viene a que sus datos ya estén cargados.
+						 *
+						 * Es `secondary` y no negro sólido a propósito. Esta barra también
+						 * se dibuja arriba de la página de una barbería, y ahí el botón
+						 * lleno tiene que ser uno solo, el de reservar. Un "Acceder" negro
+						 * arriba de un local ajeno pondría la cuenta de Polaria por delante
+						 * del turno, que es justo lo que se decidió no hacer cuando el
+						 * login dejó de ser obligatorio para reservar.
+						 *
+						 * Sin `returnTo`: el pasamanos vuelve a la página de donde salió
+						 * leyendo el `Referer`, igual que hace el de cerrar sesión. Así el
+						 * enlace es estático y la barra sigue siendo un componente de
+						 * servidor —no hay `window` que consultar ni JavaScript del que
+						 * dependa entrar a la cuenta. Ver `app/api/customer/login`.
+						 */}
+						{session ? (
+							<CustomerMenu session={session} />
+						) : (
+							<Button
+								href="/api/customer/login"
+								variant="secondary"
+								size="sm"
+								className="shrink-0 font-medium"
+							>
+								{account.login}
+							</Button>
+						)}
 					</div>
 				</nav>
 			</Container>

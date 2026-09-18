@@ -20,7 +20,24 @@ sobre software, estás en el repositorio equivocado.
 de arriba (`components/layout/navbar.tsx`) comparte la forma con la de
 `polaria-landing` —misma marca, misma altura, misma línea de 1px— y no su
 contenido: el logo lleva a la raíz y a la derecha va la cuenta de quien reserva
-cuando hay sesión, más "Para negocios" **si el layout lo pide**.
+—su avatar con sesión, un "Acceder" sin ella— más "Para negocios" **si el
+layout lo pide**.
+
+**"Acceder" está en la barra porque antes no estaba en ninguna parte.** Entrar
+a la cuenta se podía sólo desde el atajo de Google del paso de identidad, o
+sea que había que empezar a reservar en algún negocio para poder acceder. El
+botón no lleva a una pantalla de login propia: va al mismo pasamanos
+(`app/api/customer/login`), que ahora vuelve al lugar de donde salió leyendo el
+`Referer` cuando nadie le pasó un `returnTo`. Eso es lo que deja al botón ser
+un enlace estático y a la barra seguir siendo un componente de servidor.
+
+**Es un botón `secondary` y no negro sólido, y en la reserva eso importa.** La
+barra también se dibuja arriba de la página de una barbería: ahí el único botón
+lleno tiene que ser el de reservar. Un "Acceder" negro pondría la cuenta de
+Polaria por delante del turno, que es lo contrario de la decisión que sacó al
+login de ser obligatorio para reservar. Por lo mismo "Para negocios" pasó a ser
+un enlace de texto: dos píldoras blancas iguales, una al lado de la otra, no
+dicen cuál es la de quien vino a reservar.
 
 **La barra no está en el layout raíz**, aunque sea del dominio y no de una
 pantalla. Vivía ahí hasta que apareció el buscador, que la quiere sólo en
@@ -42,7 +59,8 @@ dentro del menú de la cuenta, detrás de un clic.
 marketplace: no es la página de nadie, no hay una reserva empezada que
 interrumpir, y quien entra por la puerta bien puede ser un negocio que vino a
 ver de qué se trata. Por eso ahí "Para negocios" está a la vista, arriba a la
-derecha, y lleva a `site.landingUrl` (`business.polariahq.com`). No lo decide la
+derecha —como enlace de texto al lado de "Acceder", no como píldora— y lleva a
+`site.landingUrl` (`business.polariahq.com`). No lo decide la
 barra sino quién la pone: `forBusiness` es un prop **apagado por defecto** que
 sólo prende `app/(site)/layout.tsx`. Si aparece prendido en el grupo de las
 reservas, está mal.
