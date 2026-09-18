@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import { booking } from '@/content/booking';
 import { cn } from '@/lib/utils';
-import { bookingHref } from '../booking-url';
+import { bookingHref, profileHref } from '../booking-url';
 import { formatDuration, formatServicePrice } from '../format';
 import type {
 	PublicBusinessProfile,
@@ -43,7 +44,14 @@ export function BookNowButton({
  * servicio ya elegido —viaja en la URL—, que es lo que ahorra el paso más
  * largo.
  */
-export function ServiceList({ profile }: { profile: PublicBusinessProfile }) {
+export function ServiceList({
+	profile,
+	/** La categoría del filtro, tal como vino en la URL. */
+	activeCategory,
+}: {
+	profile: PublicBusinessProfile;
+	activeCategory?: string;
+}) {
 	if (profile.services.length === 0) {
 		return (
 			<p className="rounded-2xl bg-paper-200 px-5 py-6 text-ink-600">
@@ -52,14 +60,93 @@ export function ServiceList({ profile }: { profile: PublicBusinessProfile }) {
 		);
 	}
 
+	/*
+	 * Una categoría que no existe se ignora en vez de dejar la lista vacía. La
+	 * URL la puede escribir cualquiera, y sobre todo: un enlace a una categoría
+	 * que el negocio borró después no puede terminar en una página que parece
+	 * decir que no hay servicios.
+	 */
+	const categories = profile.categories ?? [];
+
+	const active = categories.some((category) => category.id === activeCategory)
+		? activeCategory
+		: undefined;
+
+	const services = active
+		? profile.services.filter((service) => service.categoryId === active)
+		: profile.services;
+
 	return (
-		<ul className="space-y-3">
-			{profile.services.map((service) => (
-				<li key={service.id}>
-					<ServiceRow service={service} slug={profile.slug} />
-				</li>
+		<div className="space-y-4">
+			<CategoryFilter profile={profile} active={active} />
+
+			<ul className="space-y-3">
+				{services.map((service) => (
+					<li key={service.id}>
+						<ServiceRow service={service} slug={profile.slug} />
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+}
+
+/**
+ * Los filtros por categoría, como enlaces.
+ *
+ * Enlaces y no botones con estado, igual que el filtro de rubros y que
+ * "Reservar": la página del negocio no tiene JavaScript propio, y con esto
+ * sigue sin tenerlo. De paso cada categoría queda con dirección propia, así que
+ * un negocio puede mandar "mirá los tintes" y caer con el filtro puesto.
+ *
+ * No se dibuja si no hay más de un grupo que distinguir: con una sola categoría
+ * y nada fuera de ella, los dos filtros muestran exactamente lo mismo.
+ *
+ * Tampoco hay una píldora de "otros". Los servicios sin categoría no quedan
+ * escondidos porque "Todos" es lo que rige al entrar, así que agregar una
+ * píldora más sólo sumaría ruido a la fila.
+ */
+function CategoryFilter({
+	profile,
+	active,
+}: {
+	profile: PublicBusinessProfile;
+	active?: string;
+}) {
+	const categories = profile.categories ?? [];
+	const hasUncategorized = profile.services.some(
+		(service) => !service.categoryId,
+	);
+	const groups = categories.length + (hasUncategorized ? 1 : 0);
+
+	if (groups < 2) return null;
+
+	return (
+		// Se arrastra con el dedo en el teléfono, donde cinco categorías no entran
+		// en el ancho. Los márgenes negativos son para que la primera y la última
+		// lleguen al borde en lugar de cortarse contra el padding.
+		<div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+			<Chip
+				href={profileHref(profile.slug)}
+				active={active === undefined}
+				scroll={false}
+			>
+				{booking.services.allCategories}
+			</Chip>
+
+			{categories.map((category) => (
+				<Chip
+					key={category.id}
+					href={profileHref(profile.slug, category.id)}
+					active={active === category.id}
+					// La lista ya está a la vista: saltar arriba al filtrar haría
+					// perder de vista justo lo que se acaba de pedir.
+					scroll={false}
+				>
+					{category.name}
+				</Chip>
 			))}
-		</ul>
+		</div>
 	);
 }
 

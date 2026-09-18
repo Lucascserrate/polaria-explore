@@ -24,6 +24,25 @@ export const BOOKING_PARAM = {
 } as const;
 
 /**
+ * El filtro de categoría de la página del negocio.
+ *
+ * No está en `BOOKING_PARAM` porque no es del flujo de reserva: vive en la
+ * página de antes y no viaja con lo elegido. Comparte el archivo porque el
+ * motivo es el mismo —un nombre de parámetro escrito dos veces es un enlace
+ * roto esperando— y porque lo leen la página y la lista.
+ */
+export const CATEGORY_PARAM = 'categoria';
+
+/** `/royal-barber`, con una categoría preseleccionada si se pide. */
+export function profileHref(slug: string, categoryId?: string): string {
+	const base = `/${encodeURIComponent(slug)}`;
+
+	return categoryId
+		? `${base}?${CATEGORY_PARAM}=${encodeURIComponent(categoryId)}`
+		: base;
+}
+
+/**
  * "Cualquier profesional" tiene que poder escribirse en la URL.
  *
  * `null` significa dos cosas distintas —no eligió, o eligió que le da igual— y

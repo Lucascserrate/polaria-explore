@@ -18,8 +18,19 @@ import {
 	TeamPanel,
 } from '@/features/booking/components/BusinessPanels';
 import { describeStatus } from '@/features/booking/format';
+import { CATEGORY_PARAM } from '@/features/booking/booking-url';
 
-type Props = { params: Promise<{ businessSlug: string }> };
+type Props = {
+	params: Promise<{ businessSlug: string }>;
+	/**
+	 * El filtro de categoría vive en la URL y lo resuelve el servidor.
+	 *
+	 * Es lo que deja que la fila de categorías sean enlaces y que la página siga
+	 * sin JavaScript propio. `generateMetadata` no lo mira: el título y la
+	 * descripción son del negocio, no de la categoría que alguien esté viendo.
+	 */
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { businessSlug } = await params;
@@ -53,8 +64,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	};
 }
 
-export default async function BusinessBookingPage({ params }: Props) {
+export default async function BusinessBookingPage({
+	params,
+	searchParams,
+}: Props) {
 	const { businessSlug } = await params;
+	const query = await searchParams;
+
+	// Repetido en la URL se queda con el primero: un arreglo acá es alguien
+	// armando la dirección a mano, no algo que la página pueda producir.
+	const rawCategory = query[CATEGORY_PARAM];
+	const activeCategory = Array.isArray(rawCategory)
+		? rawCategory[0]
+		: rawCategory;
 
 	const profile = await getBusinessProfile(businessSlug);
 
@@ -90,7 +112,10 @@ export default async function BusinessBookingPage({ params }: Props) {
 								<h2 id="servicios" className="text-xl font-semibold">
 									{booking.services.title}
 								</h2>
-								<ServiceList profile={profile} />
+								<ServiceList
+									profile={profile}
+									activeCategory={activeCategory}
+								/>
 							</section>
 
 							<SchedulePanel profile={profile} />

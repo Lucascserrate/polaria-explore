@@ -32,6 +32,8 @@ export type WeeklyRange = {
 export type PublicService = {
 	id: string;
 	name: string;
+	/** La categoría a la que pertenece, o `null` si a ninguna. */
+	categoryId: string | null;
 	description: string | null;
 	/**
 	 * Cuánto cuesta, o `null` si el negocio lo cotiza después de ver a la persona.
@@ -99,6 +101,25 @@ export type PublicBusinessProfile = {
 	status: BusinessStatus;
 	businessHours: WeeklyRange[];
 	services: PublicService[];
+	/**
+	 * Las categorías con las que se agrupa el catálogo, ya ordenadas por el
+	 * negocio. Sólo llegan las que tienen algún servicio.
+	 *
+	 * Vacío es el caso normal —el negocio no categorizó— y entonces la lista se
+	 * muestra entera, sin filtros.
+	 *
+	 * **Opcional a propósito.** Este sitio y la API se despliegan por separado, y
+	 * si el sitio sale primero el campo no viene: leerlo sin más rompía la página
+	 * del negocio entera con un 500, para todos. Un catálogo sin filtros es peor
+	 * que uno con filtros, y muchísimo mejor que ninguna página.
+	 */
+	categories?: PublicServiceCategory[];
+};
+
+export type PublicServiceCategory = {
+	id: string;
+	name: string;
+	description: string | null;
 };
 
 export type PublicBookingConfirmation = {
