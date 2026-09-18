@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { booking } from '@/content/booking';
 import { cn } from '@/lib/utils';
 import { bookingHref } from '../booking-url';
-import { formatDuration, formatPrice } from '../format';
+import { formatDuration, formatServicePrice } from '../format';
 import type {
 	PublicBusinessProfile,
 	PublicService,
@@ -82,8 +82,14 @@ function ServiceRow({
 				<p className="mt-0.5 text-sm text-ink-500">
 					{formatDuration(service.durationMinutes)}
 				</p>
-				<p className="mt-2 font-semibold tabular-nums">
-					{formatPrice(service.price, service.currency)}
+				<p
+					className={
+						service.price === null
+							? 'mt-2 text-sm text-ink-500'
+							: 'mt-2 font-semibold tabular-nums'
+					}
+				>
+					{formatServicePrice(service.price, service.currency)}
 				</p>
 			</div>
 

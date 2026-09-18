@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import {
 	formatDayChip,
 	formatDuration,
-	formatPrice,
+	formatServicePrice,
 	formatTime,
 } from '../format';
 import type { BookingFlowState } from '../useBookingFlow';
@@ -113,7 +113,7 @@ export function ServiceStep({
 					key={service.id}
 					title={service.name}
 					hint={formatDuration(service.durationMinutes)}
-					meta={formatPrice(service.price, service.currency)}
+					meta={formatServicePrice(service.price, service.currency)}
 					onClick={() => onSelectService(service)}
 				/>
 			))}

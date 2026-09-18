@@ -79,6 +79,22 @@ export function formatPrice(amount: number, currency: string): string {
   }
 }
 
+/**
+ * El precio de un servicio tal como lo lee el cliente: el importe, o el aviso de
+ * que se cotiza.
+ *
+ * Es lo que usan las pantallas. `formatPrice` queda para quien tenga un número
+ * seguro y ya haya decidido qué hacer sin él.
+ */
+export function formatServicePrice(
+  amount: number | null,
+  currency: string,
+): string {
+  return amount === null
+    ? booking.services.quotedPrice
+    : formatPrice(amount, currency);
+}
+
 /** "45 min", "1 h", "1 h 30 min". Las horas redondas no arrastran "0 min". */
 export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;

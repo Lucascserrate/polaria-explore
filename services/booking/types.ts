@@ -33,7 +33,13 @@ export type PublicService = {
 	id: string;
 	name: string;
 	description: string | null;
-	price: number;
+	/**
+	 * Cuánto cuesta, o `null` si el negocio lo cotiza después de ver a la persona.
+	 *
+	 * `null` no es `0`: uno es "todavía no se sabe" y el otro es "no se cobra".
+	 * Donde iría el importe va `booking.services.quotedPrice`.
+	 */
+	price: number | null;
 	/**
 	 * La moneda de `price`, en ISO 4217.
 	 *
@@ -101,7 +107,8 @@ export type PublicBookingConfirmation = {
 	endTime: string;
 	serviceName: string;
 	staffName: string | null;
-	price: number;
+	/** `null` si el servicio se cotiza: no hay importe que confirmar todavía. */
+	price: number | null;
 	/** La moneda de `price`, la del servicio reservado. */
 	currency: string;
 	durationMinutes: number;

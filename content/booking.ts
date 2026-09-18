@@ -68,6 +68,19 @@ export const booking = {
 			'Este negocio todavía no publicó sus servicios. Volvé a intentar más tarde.',
 		book: 'Reservar',
 		bookNow: 'Reservar ahora',
+		/**
+		 * Lo que se lee donde iría el precio de un servicio que no lo tiene.
+		 *
+		 * Hay rubros que no pueden publicarlo: una coloración depende del largo y
+		 * del estado del pelo. El negocio no lo esconde, lo cotiza cuando ve a la
+		 * persona, y eso es lo que hay que decir: un hueco se lee como un error de
+		 * la página, y un "Bs 0" como un regalo.
+		 *
+		 * Es la misma frase que el panel y que los mensajes de WhatsApp
+		 * (`quoted-price.ts` en el backend): el mismo servicio no puede decir una
+		 * cosa acá y otra en el chat.
+		 */
+		quotedPrice: 'Requiere diagnóstico',
 	},
 
 	team: {

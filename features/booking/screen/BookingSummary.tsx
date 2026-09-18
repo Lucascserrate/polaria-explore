@@ -1,7 +1,12 @@
 'use client';
 
 import { booking } from '@/content/booking';
-import { formatDuration, formatLongDate, formatPrice, formatTime } from '../format';
+import {
+	formatDuration,
+	formatLongDate,
+	formatServicePrice,
+	formatTime,
+} from '../format';
 import type { BookingFlowState } from '../useBookingFlow';
 import type { PublicBusinessProfile } from '@/services/booking/types';
 
@@ -46,8 +51,14 @@ export function BookingSummary({
 									{staff ? ` · ${staff.name}` : ''}
 								</p>
 							</div>
-							<p className="shrink-0 font-medium tabular-nums">
-								{formatPrice(service.price, service.currency)}
+							<p
+								className={
+									service.price === null
+										? 'shrink-0 text-sm text-ink-500'
+										: 'shrink-0 font-medium tabular-nums'
+								}
+							>
+								{formatServicePrice(service.price, service.currency)}
 							</p>
 						</div>
 
@@ -65,8 +76,14 @@ export function BookingSummary({
 				{service && (
 					<div className="flex items-center justify-between gap-4 border-t border-paper-300 pt-4">
 						<p className="font-medium">{booking.flow.summary.total}</p>
-						<p className="font-semibold tabular-nums">
-							{formatPrice(service.price, service.currency)}
+						<p
+							className={
+								service.price === null
+									? 'text-sm text-ink-500'
+									: 'font-semibold tabular-nums'
+							}
+						>
+							{formatServicePrice(service.price, service.currency)}
 						</p>
 					</div>
 				)}
