@@ -106,8 +106,17 @@ export default async function BusinessBookingPage({
 						</div>
 					</div>
 
-					<div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
-						<div className="space-y-12">
+					{/*
+					 * `grid-cols-1` no es decoración: sin él la columna del teléfono es
+					 * una pista implícita `auto`, que mide por el contenido más ancho. La
+					 * fila de categorías se arrastra con el dedo, así que es más ancha que
+					 * la pantalla: la grilla entera crecía con ella y empujaba la página
+					 * hacia la derecha. `grid-cols-1` es `minmax(0,1fr)` —lo mismo que ya
+					 * hace la fila de `lg`— y el `min-w-0` de la columna termina de atar
+					 * el desborde adentro del carrusel, que es donde tiene que estar.
+					 */}
+					<div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
+						<div className="min-w-0 space-y-12">
 							<section aria-labelledby="servicios" className="space-y-4">
 								<h2 id="servicios" className="text-xl font-semibold">
 									{booking.services.title}

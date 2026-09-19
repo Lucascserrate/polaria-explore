@@ -122,10 +122,24 @@ function CategoryFilter({
 	if (groups < 2) return null;
 
 	return (
-		// Se arrastra con el dedo en el teléfono, donde cinco categorías no entran
-		// en el ancho. Los márgenes negativos son para que la primera y la última
-		// lleguen al borde en lugar de cortarse contra el padding.
-		<div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+		/*
+		 * Se arrastra con el dedo en el teléfono, donde cinco categorías no entran
+		 * en el ancho. Los márgenes negativos son para que la primera y la última
+		 * lleguen al borde en lugar de cortarse contra el padding, y por eso van con
+		 * la misma medida que el padding del `Container` (`px-5`): con `-mx-4` la
+		 * fila quedaba cuatro píxeles corrida de todo lo demás.
+		 *
+		 * `min-w-0` porque un carrusel adentro de una grilla no alcanza con que sepa
+		 * desbordar: si la columna mide por el contenido, la que se ensancha es la
+		 * página. `overscroll-x-contain` para que llegar al final de la fila no
+		 * dispare el gesto de "atrás" del navegador.
+		 *
+		 * La barra de scroll va escondida, igual que en el filtro de rubros y en la
+		 * galería: en el teléfono el navegador la dibuja sola mientras se arrastra,
+		 * y en el escritorio la fila ya no desborda porque se acomoda en varias
+		 * líneas.
+		 */
+		<div className="-mx-5 flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
 			<Chip
 				href={profileHref(profile.slug)}
 				active={active === undefined}
