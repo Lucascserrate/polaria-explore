@@ -18,3 +18,38 @@ export type CustomerSession = {
 	 */
 	phone: string | null;
 };
+
+/**
+ * Un turno vigente de la cuenta: `GET /customer/me/appointments`.
+ *
+ * **Vigente lo define el backend y no esta página**: ocupa agenda —pendiente o
+ * confirmado— y todavía no empezó. Es la misma regla con la que WhatsApp decide
+ * si recibe a alguien con "ya tenés un turno", y por eso acá no hay ningún
+ * filtro por estado ni por fecha: una segunda definición haría que el mismo
+ * turno contara en un canal y no en el otro.
+ *
+ * Es de la **cuenta**, no del teléfono. La diferencia importa: un número es un
+ * identificador y no una credencial, así que listar por número dejaría ver
+ * turnos ajenos a quien acierte uno.
+ */
+export type CustomerAppointment = {
+	id: string;
+	/** Instante de inicio en ISO. Se escribe con la zona del negocio. */
+	startTime: string;
+	endTime: string;
+	serviceName: string;
+	/** `null` cuando el turno quedó sin profesional a la vista. */
+	staffName: string | null;
+	/**
+	 * El negocio del turno.
+	 *
+	 * Viaja aunque se haya pedido filtrando por un negocio —donde la página ya lo
+	 * sabe— porque es lo que deja que el mismo contrato sirva para una lista que
+	 * mezcle negocios, que es lo que va a ser "Mis turnos".
+	 */
+	business: {
+		slug: string;
+		name: string;
+		timezone: string;
+	};
+};

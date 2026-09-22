@@ -205,6 +205,40 @@ export const booking = {
 			google: 'Continuar con Google',
 		},
 
+		/**
+		 * El aviso de que ya hay un turno sacado con este mismo negocio.
+		 *
+		 * **Informa, no interrumpe.** Nadie tiene por qué justificar un segundo
+		 * turno —se cortan el pelo dos hermanos, se reserva para el mes que viene—,
+		 * así que el texto no pregunta ni pide confirmar: dice lo que hay y deja la
+		 * pantalla como estaba. Lo que evita es la reserva repetida por olvido, que
+		 * es un problema de memoria y se resuelve mostrando el turno, no poniendo
+		 * una puerta.
+		 *
+		 * Por eso tampoco hay un botón. "Ver mi turno" no tiene a dónde ir hasta
+		 * que exista la pantalla de turnos de la cuenta, y el detalle —servicio,
+		 * día, hora y profesional— es justamente lo que ese botón iría a mostrar:
+		 * está acá, en el aviso.
+		 *
+		 * El título nombra al negocio porque la cuenta reserva en muchos: "ya tenés
+		 * un turno" a secas, en la página de una barbería, se puede leer como un
+		 * turno en cualquier otro lado.
+		 */
+		existing: {
+			title: (business: string, count: number) =>
+				count === 1
+					? `Ya tenés un turno en ${business}`
+					: `Ya tenés ${count} turnos en ${business}`,
+			/**
+			 * Se dice que puede seguir, y en pasado del hecho: es la respuesta a la
+			 * pregunta que el aviso acaba de despertar —"¿entonces no puedo sacar
+			 * otro?"— y contestarla ahí ahorra tener que probar.
+			 */
+			hint: 'Podés sacar otro turno igual, si querés.',
+			/** El aviso es un complemento de la pantalla, no su encabezado. */
+			label: 'Turnos que ya tenés con este negocio',
+		},
+
 		/** Pedir el teléfono, lo único que Google no da. */
 		phoneStep: {
 			title: 'Añadir teléfono',

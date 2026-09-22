@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/container';
 import { booking } from '@/content/booking';
-import type { CustomerSession } from '@/services/customer/types';
+import type {
+	CustomerAppointment,
+	CustomerSession,
+} from '@/services/customer/types';
 import type { PublicBusinessProfile } from '@/services/booking/types';
 import { useBookingFlow } from '../useBookingFlow';
 import {
@@ -15,6 +18,7 @@ import {
 } from '../components/SelectionSteps';
 import { ConfirmStep } from '../components/ConfirmStep';
 import { DoneStep } from '../components/DoneStep';
+import { ExistingAppointments } from '../components/ExistingAppointments';
 import { BookingBreadcrumbs } from './BookingBreadcrumbs';
 import { BookingSummary } from './BookingSummary';
 import { PhoneDialog } from './PhoneDialog';
@@ -36,9 +40,19 @@ import { PhoneDialog } from './PhoneDialog';
 export function BookingScreen({
 	profile,
 	customer,
+	existingAppointments = [],
 }: {
 	profile: PublicBusinessProfile;
 	customer: CustomerSession | null;
+	/**
+	 * Los turnos que la cuenta ya tiene con **este** negocio, resueltos en el
+	 * servidor junto con la sesión. Vacío sin sesión, que es el camino de siempre.
+	 *
+	 * Llegan como prop y no por React Query porque el aviso tiene que estar en el
+	 * HTML: uno que aparece cuando ya se eligió un servicio llega tarde para lo
+	 * único que sirve. Ver `getCustomerAppointments`.
+	 */
+	existingAppointments?: CustomerAppointment[];
 }) {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -139,6 +153,27 @@ export function BookingScreen({
 								</p>
 							)}
 						</div>
+
+						{/*
+						 * El aviso de que ya hay turno con este negocio, en todos los pasos
+						 * menos el último.
+						 *
+						 * En todos porque la sesión puede aparecer en el medio: quien entra
+						 * sin cuenta y usa el atajo de Google recién en "confirmá tu
+						 * reserva" vuelve de Google a ese paso, y ahí es cuando se sabe por
+						 * primera vez que ya tenía turno. Un aviso que sólo se dibujara al
+						 * entrar se lo perdería justo antes de duplicarlo.
+						 *
+						 * En "listo" no, y no es una excepción sino lo mismo: ahí el turno
+						 * recién sacado ya está en pantalla, y estos datos son los de antes
+						 * de crearlo.
+						 */}
+						{state.step !== 'done' && (
+							<ExistingAppointments
+								profile={profile}
+								appointments={existingAppointments}
+							/>
+						)}
 
 						{state.error && (
 							<p className="rounded-2xl bg-attention-50 px-5 py-4 text-attention-700">

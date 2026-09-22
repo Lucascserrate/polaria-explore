@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { booking } from '@/content/booking';
 import { getBusinessProfile } from '@/services/booking/server/business';
+import { getCustomerAppointments } from '@/services/customer/server/appointments';
 import { getCustomerSession } from '@/services/customer/server/session';
 import { BookingScreen } from '@/features/booking/screen/BookingScreen';
 
@@ -53,15 +54,27 @@ export default async function BookingPage({ params }: Props) {
 	const { businessSlug } = await params;
 
 	/*
-	 * Los dos en paralelo: el perfil no depende de quién mire, y la sesión no
+	 * Los tres en paralelo: el perfil no depende de quién mire, y la sesión no
 	 * depende del negocio.
+	 *
+	 * Los turnos que ya tiene la cuenta sí dependen de las dos cosas, pero no
+	 * esperan a ninguna: les alcanza con la cookie, que ya está en la petición.
+	 * Encadenarlos a la sesión sumaría un viaje a la API antes de dibujar nada, y
+	 * sin cookie ni siquiera salen. Ver `getCustomerAppointments`.
 	 */
-	const [profile, customer] = await Promise.all([
+	const [profile, customer, existingAppointments] = await Promise.all([
 		getBusinessProfile(businessSlug),
 		getCustomerSession(),
+		getCustomerAppointments(businessSlug),
 	]);
 
 	if (!profile) notFound();
 
-	return <BookingScreen profile={profile} customer={customer} />;
+	return (
+		<BookingScreen
+			profile={profile}
+			customer={customer}
+			existingAppointments={existingAppointments}
+		/>
+	);
 }

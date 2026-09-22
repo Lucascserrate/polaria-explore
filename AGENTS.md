@@ -145,7 +145,22 @@ services/booking/
   server/
     request.ts        transporte del servidor → API de Polaria (server-only)
     business.ts  staff.ts  days.ts  slots.ts  bookings.ts
+
+services/customer/
+  types.ts            el contrato de `/customer/*`: la cuenta y sus turnos
+  phone.ts            transporte del navegador → /api/customer/phone
+  server/
+    session.ts        quién está en sesión (server-only)
+    appointments.ts   los turnos vigentes de la cuenta (server-only)
 ```
+
+**`services/customer/` es de la persona, no del negocio**, y por eso está
+separado de `services/booking/`: la misma cuenta reserva en cualquier negocio
+del marketplace, así que lo que cuelga de acá sigue valiendo cuando el negocio
+cambia. Los dos servicios del servidor van envueltos en `cache` de React —los
+piden el layout y la pantalla— y **los dos devuelven vacío en lugar de romper**
+cuando la API no contesta: sin sesión hay que ofrecer iniciarla, y sin turnos
+hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
 
 - **`services/booking/server/` es `server-only`.** Si alguien lo importa desde un
   componente de cliente, el build falla en lugar de mandar la URL interna de la
@@ -170,6 +185,25 @@ services/booking/
 - **No hay lógica de reservas acá.** Disponibilidad, asignación de profesional y
   creación de la cita las resuelve la API de Polaria, que es la misma que atiende
   WhatsApp y el panel. Si aparece un cálculo de horarios en este repo, está mal.
+- **Con sesión, la pantalla avisa si ya hay un turno con ese negocio**
+  (`ExistingAppointments`). Es lo mismo que hace WhatsApp al recibir a alguien
+  que ya tiene turno —nombrarlo en lugar de volver a presentarse— y sale de la
+  misma definición de turno vigente, que la decide el backend
+  (`GET /customer/me/appointments`, `findUpcomingByCustomerAccount`): acá no se
+  filtra por estado ni por fecha, porque una segunda definición haría que el
+  mismo turno contara en un canal y no en el otro. Tres cosas que no hay que
+  deshacer: **avisa y no bloquea** —un segundo turno es legítimo, y el flujo
+  sigue abajo igual que si la tarjeta no estuviera—; **se dibuja en todos los
+  pasos menos "listo"**, porque la sesión puede aparecer en el medio y quien usa
+  el atajo de Google recién en "confirmá" se perdería el aviso justo antes de
+  duplicar el turno; y **no lleva botón**, porque el detalle del turno es lo que
+  un "Ver mi turno" iría a mostrar y ya está en la tarjeta. El título es el
+  enlace natural a la pantalla de turnos de la cuenta el día que exista.
+- **Sin sesión no se pregunta nada y no cambia nada.** `getCustomerAppointments`
+  no sale sin cookie, así que quien reserva sin cuenta tiene la pantalla de
+  siempre: ni login, ni una espera de más. Detectar el turno de un visitante
+  anónimo es otro problema —habría que identificarlo por teléfono, que es un
+  identificador y no una credencial— y no se resuelve de este lado.
 - **Las fotos son opcionales, y sin fotos no hay hueco.** La galería
   (`BusinessGallery`) no dibuja nada cuando el negocio no subió ninguna, que es
   el caso de casi todos: la página tiene que verse terminada así. Las sube el
