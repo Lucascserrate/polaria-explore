@@ -70,6 +70,16 @@ export const booking = {
 		book: 'Reservar',
 		bookNow: 'Reservar ahora',
 		/**
+		 * El resto del catálogo, detrás de un toque.
+		 *
+		 * Dice **cuántos** faltan y no "Ver todos": el número es lo que deja decidir
+		 * si vale la pena abrirlo, y es la diferencia entre dos servicios más y
+		 * veinte. Ver `ServiceOverflow`.
+		 */
+		seeMore: (hidden: number) =>
+			hidden === 1 ? 'Ver 1 servicio más' : `Ver ${hidden} servicios más`,
+		seeLess: 'Ver menos',
+		/**
 		 * Lo que se lee donde iría el precio de un servicio que no lo tiene.
 		 *
 		 * Hay rubros que no pueden publicarlo: una coloración depende del largo y

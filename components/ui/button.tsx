@@ -49,10 +49,31 @@ type AsButton = SharedProps & { href?: undefined } & Omit<
 		keyof SharedProps
 	>;
 
+/**
+ * Las clases de un botón, sin el botón.
+ *
+ * Existe para lo que tiene que **verse** como un botón pero no puede serlo: hoy,
+ * el `<summary>` que despliega el resto de los servicios, que es un `<details>`
+ * justamente para abrir sin una línea de JavaScript. Copiar esas clases a mano
+ * era la otra opción, y es la que termina en dos alturas distintas para el mismo
+ * control.
+ */
+export function buttonClasses({
+	variant = 'primary',
+	size = 'md',
+	className,
+}: {
+	variant?: Variant;
+	size?: Size;
+	className?: string;
+} = {}): string {
+	return cn(base, variants[variant], sizes[size], className);
+}
+
 /** Renderiza `<a>` si recibe href, `<button>` si no. */
 export function Button(props: AsAnchor | AsButton) {
 	const { variant = 'primary', size = 'md', className, children, ...rest } = props;
-	const classes = cn(base, variants[variant], sizes[size], className);
+	const classes = buttonClasses({ variant, size, className });
 
 	if (rest.href !== undefined) {
 		return (

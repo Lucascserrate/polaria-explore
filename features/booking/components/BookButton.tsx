@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button, buttonClasses } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { booking } from '@/content/booking';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,16 @@ export function BookNowButton({
 		</Button>
 	);
 }
+
+/**
+ * Cuántos servicios se ven antes de tener que pedir el resto.
+ *
+ * Ocho es más o menos lo que entra en una pantalla de teléfono sin que la
+ * sección de servicios empuje al horario, a las fotos y a la dirección tan abajo
+ * que nadie llegue: hay negocios con treinta, y una lista de treinta filas
+ * convierte al resto de la página en algo que existe pero no se visita.
+ */
+const VISIBLE_SERVICES = 8;
 
 /**
  * La lista de servicios.
@@ -76,17 +86,29 @@ export function ServiceList({
 		? profile.services.filter((service) => service.categoryId === active)
 		: profile.services;
 
+	/*
+	 * El corte va **después** de filtrar: quien entró por "Color" tiene que ver
+	 * los primeros ocho de color, no los que sobrevivieron al filtro de una lista
+	 * ya recortada.
+	 */
+	const visible = services.slice(0, VISIBLE_SERVICES);
+	const hidden = services.slice(VISIBLE_SERVICES);
+
 	return (
 		<div className="space-y-4">
 			<CategoryFilter profile={profile} active={active} />
 
 			<ul className="space-y-3">
-				{services.map((service) => (
+				{visible.map((service) => (
 					<li key={service.id}>
 						<ServiceRow service={service} slug={profile.slug} />
 					</li>
 				))}
 			</ul>
+
+			{hidden.length > 0 && (
+				<ServiceOverflow services={hidden} slug={profile.slug} />
+			)}
 		</div>
 	);
 }
@@ -161,6 +183,80 @@ function CategoryFilter({
 				</Chip>
 			))}
 		</div>
+	);
+}
+
+/**
+ * Los servicios que no entraron, detrás de "Ver más".
+ *
+ * **Es un `<details>` y no un botón con estado**, por las dos razones que ya
+ * mandan en esta página. La primera: acá no hay JavaScript propio —"Reservar"
+ * es un `<a>`, el filtro de categorías son enlaces— y un `useState` obligaría a
+ * convertir la lista en un componente de cliente para abrir un acordeón.
+ *
+ * La segunda importa más y es la que descartó la otra alternativa obvia, mandar
+ * el resto a `?servicios=todos`: **las filas escondidas siguen estando en el
+ * HTML**. Esta es la página que tiene que aparecer en Google —es la que
+ * responde "qué ofrece y cuánto sale"— y con el resto detrás de otra dirección,
+ * el buscador vería ocho servicios de treinta. Un `<details>` cerrado esconde
+ * con CSS, no con la red.
+ *
+ * El botón queda **arriba** de lo que despliega, y no es un descuido: el
+ * `<summary>` tiene que ser el primer hijo del `<details>`, y moverlo con
+ * `order` obliga a ponerle `display: flex` al `<details>`, que es exactamente lo
+ * que Safari rompe —el contenido se queda visible con el desplegable cerrado—.
+ * Cerrado igual se lee donde el diseño lo pide: al pie de los ocho.
+ */
+function ServiceOverflow({
+	services,
+	slug,
+}: {
+	services: PublicService[];
+	slug: string;
+}) {
+	return (
+		<details className="group">
+			<summary
+				className={buttonClasses({
+					variant: 'secondary',
+					className:
+						'w-full cursor-pointer list-none [&::-webkit-details-marker]:hidden',
+				})}
+			>
+				{/*
+				 * Las dos leyendas van en el HTML y se turnan con CSS. Cambiarla al
+				 * abrir necesitaría JavaScript, y dejar "Ver más" con la lista ya
+				 * desplegada sería un botón que miente sobre lo que hace.
+				 */}
+				<span className="group-open:hidden">
+					{booking.services.seeMore(services.length)}
+				</span>
+				<span className="hidden group-open:inline">
+					{booking.services.seeLess}
+				</span>
+
+				<svg
+					aria-hidden="true"
+					viewBox="0 0 24 24"
+					className="size-4 transition-transform group-open:rotate-180"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth={2}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
+					<path d="m6 9 6 6 6-6" />
+				</svg>
+			</summary>
+
+			<ul className="mt-3 space-y-3">
+				{services.map((service) => (
+					<li key={service.id}>
+						<ServiceRow service={service} slug={slug} />
+					</li>
+				))}
+			</ul>
+		</details>
 	);
 }
 

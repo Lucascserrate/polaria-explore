@@ -270,6 +270,17 @@ hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
   días y un "Abierto hasta las 20:00" quemado en el PNG miente la mitad de la
   semana. El recorte lo pide Cloudinary (`c_fill,g_auto`), no satori.
 
+- **La lista de servicios muestra ocho y esconde el resto detrás de "Ver más"**
+  (`ServiceOverflow`), y el corte se aplica **después** del filtro de categoría.
+  Es un `<details>`, no un acordeón con estado, por las dos reglas de esta
+  página: no tiene JavaScript propio, y **es la que tiene que indexar Google**.
+  Eso último descartó la alternativa obvia —mandar el resto a
+  `?servicios=todos`, como hace el filtro de categorías—: con las filas detrás
+  de otra dirección, el buscador vería ocho servicios de treinta. Cerrado, el
+  `<details>` esconde con CSS y el catálogo entero sigue en el HTML.
+  El `<summary>` queda arriba de lo que despliega y no abajo: moverlo con
+  `order` obliga a `display: flex` en el `<details>`, que es lo que rompe Safari
+  —el contenido se queda visible con el desplegable cerrado—.
 - **La galería es la única parte cliente de la página**, junto al flujo de
   reserva. Necesita el índice actual del carrusel y las teclas del visor; el
   HTML igual llega con todas las fotos, así que sin JavaScript se ven y se
