@@ -233,9 +233,15 @@ export const booking = {
 		/** Repartir la reserva: un profesional por servicio. */
 		staffPerService: {
 			title: 'Elegí quién hace cada uno',
-			/** El selector de cada tarjeta. */
-			label: (service: string) => `Profesional para ${service}`,
-			placeholder: 'Elegir',
+			/** La píldora de cada tarjeta, que abre la hoja. */
+			label: (service: string) => `Elegir profesional para ${service}`,
+			/**
+			 * Bajo el nombre del servicio, dentro de la hoja.
+			 *
+			 * Dice para qué es la lista sin repetir el nombre del servicio, que ya
+			 * está de título dos líneas arriba.
+			 */
+			dialogHint: 'Elegí quién te lo hace',
 			/** Un servicio que nadie del equipo hace: no hay a quién elegir. */
 			empty: 'Nadie tiene asignado este servicio.',
 		},

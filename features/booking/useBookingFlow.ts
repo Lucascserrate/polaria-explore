@@ -6,7 +6,6 @@ import { booking } from '@/content/booking';
 import {
 	ANY_STAFF,
 	BOOKING_PARAM,
-	PER_SERVICE_STAFF,
 	PICKING_SERVICES,
 	PICKING_STAFF,
 	readIds,
@@ -113,7 +112,15 @@ export type StaffChoice =
 	| { kind: 'pending' }
 	| { kind: 'any' }
 	| { kind: 'shared'; staffId: string }
-	| { kind: 'perService'; staffIds: (string | null)[] };
+	| {
+			kind: 'perService';
+			/**
+			 * Uno por servicio y en el mismo orden. Cada entrada es un id o
+			 * `ANY_STAFF`, **nunca vacía**: la pantalla arranca con todas en
+			 * "cualquiera", así que no existe el estado a medio llenar.
+			 */
+			staffIds: string[];
+	  };
 
 export type BookingFlowState = {
 	step: BookingStep;
@@ -229,8 +236,16 @@ export function useBookingFlow(
 				staffOptions,
 				staffByService,
 				onlyStaff,
+				loaded: staffQuery.isSuccess,
 			}),
-		[staffParam, services.length, staffOptions, staffByService, onlyStaff],
+		[
+			staffParam,
+			services.length,
+			staffOptions,
+			staffByService,
+			onlyStaff,
+			staffQuery.isSuccess,
+		],
 	);
 
 	/**
@@ -307,8 +322,7 @@ export function useBookingFlow(
 
 	/* --- El paso, derivado ------------------------------------------------- */
 
-	const repartiendo =
-		staffChoice.kind === 'perService' && (pickingStaff || !selection);
+	const repartiendo = pickingStaff && staffChoice.kind === 'perService';
 
 	const step: BookingStep = create.data
 		? 'done'
@@ -433,16 +447,25 @@ export function useBookingFlow(
 		[navigate],
 	);
 
-	/** "Elegir profesional por servicio": abre el paso de repartir. */
+	/**
+	 * "Elegir profesional por servicio": abre el paso de repartir.
+	 *
+	 * Arranca con **todas las posiciones en "cualquiera"**, y eso es lo que hace
+	 * que el paso no tenga estado a medio llenar: no hay nada que completar, sólo
+	 * cosas que cambiar. Antes esto escribía un centinela de "pedí repartir y no
+	 * asigné a nadie", y asignar el primero de dos volvía a ese centinela —que se
+	 * lee como "ninguno asignado"—, así que cada elección borraba la anterior y el
+	 * paso era imposible de terminar.
+	 */
 	const selectStaffPerService = useCallback(
 		() =>
 			navigate({
-				staff: PER_SERVICE_STAFF,
+				staff: serviceIds.map(() => ANY_STAFF).join(','),
 				picking: PICKING_STAFF,
 				date: null,
 				slot: null,
 			}),
-		[navigate],
+		[navigate, serviceIds],
 	);
 
 	/**
@@ -461,18 +484,18 @@ export function useBookingFlow(
 			const current =
 				staffChoice.kind === 'perService'
 					? staffChoice.staffIds
-					: serviceIds.map(() => null);
+					: serviceIds.map(() => ANY_STAFF);
 
 			const next = serviceIds.map((_, position) =>
-				position === index ? staffId : (current[position] ?? ''),
+				position === index ? staffId : (current[position] ?? ANY_STAFF),
 			);
 
 			navigate(
 				{
-					staff: next.every(Boolean) ? next.join(',') : PER_SERVICE_STAFF,
-					// La pantalla sigue abierta hasta que se apriete "Continuar":
-					// asignar el último no puede navegar debajo del dedo de alguien que
-					// todavía está revisando el primero.
+					staff: next.join(','),
+					// La pantalla sigue abierta hasta que se apriete "Continuar": cambiar
+					// el último no puede navegar debajo del dedo de alguien que todavía
+					// está revisando el primero.
 					picking: PICKING_STAFF,
 					date: null,
 					slot: null,
@@ -612,29 +635,56 @@ function readStaffChoice(input: {
 	staffOptions: PublicStaff[];
 	staffByService: { serviceId: string; staff: PublicStaff[] }[];
 	onlyStaff: PublicStaff | null;
+	/**
+	 * Si las listas de profesionales ya llegaron.
+	 *
+	 * Mientras no llegaron, un id de la URL se da por bueno: todavía no se sabe
+	 * si existe, y descartarlo mandaría al paso de profesional a alguien que ya
+	 * lo había resuelto —un parpadeo al recargar, o al volver de Google—. El
+	 * backend revalida todo al pedir horarios, así que la barrera real no depende
+	 * de esto.
+	 */
+	loaded: boolean;
 }): StaffChoice {
-	const { raw, serviceCount, staffOptions, staffByService, onlyStaff } = input;
+	const {
+		raw,
+		serviceCount,
+		staffOptions,
+		staffByService,
+		onlyStaff,
+		loaded,
+	} = input;
 
 	if (raw === ANY_STAFF) return { kind: 'any' };
-
-	if (raw === PER_SERVICE_STAFF) {
-		return { kind: 'perService', staffIds: Array(serviceCount).fill(null) };
-	}
 
 	const ids = readIds(raw);
 
 	if (ids.length === 1) {
-		return staffOptions.some((member) => member.id === ids[0])
+		const exists = staffOptions.some((member) => member.id === ids[0]);
+
+		return !loaded || exists
 			? { kind: 'shared', staffId: ids[0] }
 			: { kind: 'pending' };
 	}
 
 	if (serviceCount > 1 && ids.length === serviceCount) {
-		const valid = ids.every((id, index) =>
-			(staffByService[index]?.staff ?? []).some((member) => member.id === id),
+		/*
+		 * `cualquiera` vale en cualquier posición: repartir no obliga a elegir a
+		 * alguien para cada servicio. Un id que no está en la lista de **ese**
+		 * servicio sí se descarta, igual que antes: el enlace puede ser viejo, o el
+		 * negocio pudo dar de baja al profesional.
+		 */
+		const valid = ids.every(
+			(id, index) =>
+				id === ANY_STAFF ||
+				(staffByService[index]?.staff ?? []).some(
+					(member) => member.id === id,
+				),
 		);
 
-		return valid ? { kind: 'perService', staffIds: ids } : { kind: 'pending' };
+		return !loaded || valid
+			? { kind: 'perService', staffIds: ids }
+			: { kind: 'pending' };
 	}
 
 	/*
@@ -650,9 +700,9 @@ function readStaffChoice(input: {
  * La selección lista para consultar, o `null` si todavía falta decidir.
  *
  * `any` viaja **sin** `staffIds` a propósito: es lo que le dice al backend que
- * resuelva uno solo para toda la reserva. Llenar la lista de centinelas sería
- * escribir la misma intención de otra forma, y dos formas de decir lo mismo son
- * dos ramas que pueden discrepar.
+ * resuelva uno solo para toda la reserva. La lista llena de `cualquiera` dice
+ * otra cosa —repartila, no tengo preferencia en ninguno— y por eso las dos
+ * formas conviven sin pisarse.
  */
 function toSelection(
 	serviceIds: string[],
@@ -667,13 +717,14 @@ function toSelection(
 		case 'shared':
 			return { serviceIds, staffIds: serviceIds.map(() => choice.staffId) };
 
-		case 'perService': {
-			const staffIds = choice.staffIds;
-
-			return staffIds.every((id): id is string => Boolean(id))
-				? { serviceIds, staffIds }
-				: null;
-		}
+		/*
+		 * Viaja entera, con los `cualquiera` incluidos. Para el backend eso no es lo
+		 * mismo que omitir la lista: omitirla pide una sola persona para toda la
+		 * reserva, y mandarla llena de `cualquiera` pide que cada tramo se resuelva
+		 * por su cuenta, que es justamente lo que significa haber elegido repartir.
+		 */
+		case 'perService':
+			return { serviceIds, staffIds: choice.staffIds };
 
 		case 'pending':
 			return null;

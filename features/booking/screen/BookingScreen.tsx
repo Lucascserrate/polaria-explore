@@ -88,12 +88,12 @@ export function BookingScreen({
 		state.step === 'service'
 			? { show: true, disabled: state.services.length === 0 }
 			: state.step === 'staffPerService'
-				? {
-						show: true,
-						disabled:
-							state.staffChoice.kind !== 'perService' ||
-							state.staffChoice.staffIds.some((id) => !id),
-					}
+				? /*
+					 * Nunca deshabilitado: el paso arranca con todas las filas en
+					 * "cualquier profesional", así que no hay nada que completar antes de
+					 * poder seguir. Sólo cosas que cambiar.
+					 */
+					{ show: true, disabled: false }
 				: { show: false, disabled: false };
 
 	return (

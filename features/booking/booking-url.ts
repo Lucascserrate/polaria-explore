@@ -26,10 +26,11 @@ export const BOOKING_PARAM = {
 	 */
 	services: 'servicios',
 	/**
-	 * Quién atiende. Ver `ANY_STAFF` y `PER_SERVICE_STAFF`.
+	 * Quién atiende. Ver `ANY_STAFF`.
 	 *
-	 * Un solo valor vale para toda la reserva; una lista separada por coma es uno
-	 * por servicio, alineada con `servicios`.
+	 * Un solo valor vale para toda la reserva —un id, o `cualquiera`—; una lista
+	 * separada por coma es uno por servicio, alineada con `servicios`, y cada
+	 * posición puede ser un id o `cualquiera`.
 	 */
 	staff: 'profesionales',
 	/**
@@ -77,21 +78,16 @@ export function profileHref(slug: string, categoryId?: string): string {
  * `null` significa dos cosas distintas —no eligió, o eligió que le da igual— y
  * un parámetro ausente sólo puede representar una. Con este centinela el paso
  * queda resuelto y no se vuelve a preguntar.
+ *
+ * Vale suelto —"cualquiera para toda la reserva"— y también **en una posición**
+ * de la lista, que es lo que permite repartir sin obligar a elegir a alguien
+ * para cada servicio. Sin eso, la pantalla de repartir necesitaría representar
+ * "todavía no elegí", y una lista a medio llenar es exactamente el estado que no
+ * se puede escribir en la URL sin inventar un tercer centinela.
+ *
+ * El backend lo acepta con este mismo nombre. Ver `ANY_STAFF` allá.
  */
 export const ANY_STAFF = 'cualquiera';
-
-/**
- * "Quiero elegir un profesional por servicio", antes de haber elegido ninguno.
- *
- * Es el segundo centinela y existe por lo mismo que el primero: es una decisión
- * que tomó el cliente —repartir la reserva— y que todavía no produjo ningún id.
- * Sin él habría que guardar en algún lado que apretó esa fila, y ese "algún
- * lado" sería un estado que la URL no sabe y que se pierde al volver de Google.
- *
- * Nunca llega al backend: en cuanto cada servicio tiene su profesional, el
- * parámetro pasa a ser la lista de ids.
- */
-export const PER_SERVICE_STAFF = 'porservicio';
 
 /** Los dos valores de `eligiendo`. Ver `BOOKING_PARAM.picking`. */
 export const PICKING_SERVICES = 'servicios';

@@ -227,10 +227,20 @@ hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
     última asignación de profesional cambiaría la pantalla debajo del dedo.
   - **El profesional tiene tres formas y viven en un solo parámetro**
     (`?profesionales=`): `cualquiera`, un id para toda la reserva, o una lista
-    alineada con los servicios. `porservicio` es el centinela de "pedí
-    repartirla y todavía no asigné a nadie", y nunca llega al backend. Tres
-    parámetros sueltos permitirían combinaciones a las que habría que decidir
-    cuál creerle.
+    alineada con los servicios donde cada posición es un id **o `cualquiera`**.
+    Tres parámetros sueltos permitirían combinaciones a las que habría que
+    decidir cuál creerle.
+  - **En el paso de repartir no existe "todavía no elegí", y es a propósito.**
+    Las filas arrancan todas en "cualquier profesional", así que no hay nada que
+    completar: sólo cosas que cambiar. La primera versión arrancaba vacía y era
+    **imposible de terminar** —una lista a medio llenar no se podía escribir en
+    la URL, así que volvía al centinela de "no elegí a nadie" y cada elección
+    borraba la anterior—. Si alguien vuelve a introducir un estado parcial acá,
+    vuelve el bug.
+  - **Omitir `?profesionales=` no es lo mismo que llenarlo de `cualquiera`.** Lo
+    primero pide una sola persona para toda la reserva; lo segundo pide
+    repartirla sin preferencia, y pueden tocar dos personas distintas. El
+    backend lo distingue con `requireSingleStaff`.
   - **Por defecto atiende una sola persona.** "Cualquier profesional" con dos
     servicios sigue queriendo decir *uno solo para todo* —el backend lo exige
     con `requireSingleStaff`—: quien no eligió a nadie no está pidiendo que lo
