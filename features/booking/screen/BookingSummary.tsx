@@ -4,6 +4,7 @@ import { booking } from '@/content/booking';
 import {
 	formatDuration,
 	formatLongDate,
+	formatPrice,
 	formatServicePrice,
 	formatTime,
 } from '../format';
@@ -21,6 +22,11 @@ import type { PublicBusinessProfile } from '@/services/booking/types';
  * Muestra sólo lo decidido. Un resumen con huecos para lo que falta ("hora: —")
  * se lee como un formulario incompleto; lo que falta ya está señalado en las
  * migas y en el título.
+ *
+ * **Con varios servicios es una lista, y el total deja de ser un precio
+ * repetido**: pasa a ser una suma que no está en ninguna otra parte de la
+ * pantalla. Ahí abajo aparece además la duración, que es lo que alguien necesita
+ * para saber si le entra en la tarde.
  */
 export function BookingSummary({
 	profile,
@@ -29,7 +35,7 @@ export function BookingSummary({
 	profile: PublicBusinessProfile;
 	state: BookingFlowState;
 }) {
-	const { service, staff, slot } = state;
+	const { services, staff, slot, durationMinutes, totalPrice } = state;
 
 	return (
 		<aside className="hidden lg:block">
@@ -41,26 +47,31 @@ export function BookingSummary({
 					)}
 				</div>
 
-				{service && (
+				{services.length > 0 && (
 					<div className="space-y-3 border-t border-paper-300 pt-4">
-						<div className="flex items-start justify-between gap-4">
-							<div className="min-w-0">
-								<p className="font-medium">{service.name}</p>
-								<p className="text-sm text-ink-500">
-									{formatDuration(service.durationMinutes)}
-									{staff ? ` · ${staff.name}` : ''}
+						{services.map((service) => (
+							<div
+								key={service.id}
+								className="flex items-start justify-between gap-4"
+							>
+								<div className="min-w-0">
+									<p className="font-medium">{service.name}</p>
+									<p className="text-sm text-ink-500">
+										{formatDuration(service.durationMinutes)}
+										{staff ? ` · ${staff.name}` : ''}
+									</p>
+								</div>
+								<p
+									className={
+										service.price === null
+											? 'shrink-0 text-sm text-ink-500'
+											: 'shrink-0 font-medium tabular-nums'
+									}
+								>
+									{formatServicePrice(service.price, service.currency)}
 								</p>
 							</div>
-							<p
-								className={
-									service.price === null
-										? 'shrink-0 text-sm text-ink-500'
-										: 'shrink-0 font-medium tabular-nums'
-								}
-							>
-								{formatServicePrice(service.price, service.currency)}
-							</p>
-						</div>
+						))}
 
 						{slot && (
 							<p className="text-sm text-ink-700 first-letter:uppercase">
@@ -73,18 +84,36 @@ export function BookingSummary({
 					</div>
 				)}
 
-				{service && (
-					<div className="flex items-center justify-between gap-4 border-t border-paper-300 pt-4">
-						<p className="font-medium">{booking.flow.summary.total}</p>
-						<p
-							className={
-								service.price === null
-									? 'text-sm text-ink-500'
-									: 'font-semibold tabular-nums'
-							}
-						>
-							{formatServicePrice(service.price, service.currency)}
-						</p>
+				{services.length > 0 && (
+					<div className="space-y-2 border-t border-paper-300 pt-4">
+						{/*
+						 * La duración total sólo con dos o más servicios: con uno ya está
+						 * escrita en su propia fila, y repetirla abajo sería decir el mismo
+						 * número dos veces.
+						 */}
+						{services.length > 1 && (
+							<div className="flex items-center justify-between gap-4 text-sm text-ink-600">
+								<p>{booking.flow.summary.duration}</p>
+								<p className="tabular-nums">
+									{formatDuration(durationMinutes)}
+								</p>
+							</div>
+						)}
+
+						<div className="flex items-center justify-between gap-4">
+							<p className="font-medium">{booking.flow.summary.total}</p>
+							<p
+								className={
+									totalPrice === null
+										? 'text-sm text-ink-500'
+										: 'font-semibold tabular-nums'
+								}
+							>
+								{totalPrice === null
+									? booking.flow.summary.quotedTotal
+									: formatPrice(totalPrice, services[0].currency)}
+							</p>
+						</div>
 					</div>
 				)}
 			</div>

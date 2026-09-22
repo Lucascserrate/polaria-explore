@@ -30,15 +30,28 @@ export async function POST(
     Record<keyof CreateBookingInput, unknown>
   > | null;
 
-  const serviceId = asText(body?.serviceId);
+  const serviceIds = asIds(body?.serviceIds);
+  const staffIds = asIds(body?.staffIds);
   const startTime = asText(body?.startTime);
   const customerName = asText(body?.customerName);
   const customerPhone = asText(body?.customerPhone);
   const cookie = customerCookieHeader(request.headers.get("cookie"));
 
   const missingCustomer = !cookie && (!customerName || !customerPhone);
-  if (!serviceId || !startTime || missingCustomer) {
+  if (serviceIds.length === 0 || !startTime || missingCustomer) {
     return Response.json({ message: "Faltan datos" }, { status: 400 });
+  }
+
+  /*
+   * Las dos listas se emparejan por posición, así que una más corta dejaría al
+   * último servicio con "cualquier profesional" sin que nadie lo haya pedido.
+   * La API lo rechaza igual; devolverlo acá evita el salto de red.
+   */
+  if (staffIds.length > 0 && staffIds.length !== serviceIds.length) {
+    return Response.json(
+      { message: "Falta el profesional de alguno de los servicios" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -46,8 +59,8 @@ export async function POST(
       await createBooking(
         slug,
         {
-          serviceId,
-          staffId: asText(body?.staffId) || undefined,
+          serviceIds,
+          ...(staffIds.length > 0 ? { staffIds } : {}),
           startTime,
           // Con sesión no se mandan: los pone la API desde la cuenta.
           ...(cookie ? {} : { customerName, customerPhone }),
@@ -63,3 +76,6 @@ export async function POST(
 
 const asText = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
+
+const asIds = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map(asText).filter(Boolean) : [];

@@ -14,11 +14,40 @@
  *
  * Se leen en la barra de direcciones de un cliente, así que se escriben como el
  * resto de la página. Y están en un solo lugar porque dos copias de
- * `'servicio'` son un enlace roto esperando.
+ * `'servicios'` son un enlace roto esperando.
  */
 export const BOOKING_PARAM = {
-	service: 'servicio',
-	staff: 'profesional',
+	/**
+	 * Los servicios de la reserva, separados por coma y **en orden de atención**.
+	 *
+	 * En plural desde que una reserva puede llevar más de uno. El orden es el que
+	 * el cliente ve en el resumen y el que el backend encadena, así que la lista
+	 * no se reordena en ninguna capa.
+	 */
+	services: 'servicios',
+	/**
+	 * Quién atiende. Ver `ANY_STAFF` y `PER_SERVICE_STAFF`.
+	 *
+	 * Un solo valor vale para toda la reserva; una lista separada por coma es uno
+	 * por servicio, alineada con `servicios`.
+	 */
+	staff: 'profesionales',
+	/**
+	 * Qué lista se está completando ahora mismo: `servicios` o `profesionales`.
+	 *
+	 * Es el único dato del flujo que no es una elección sino un estado de la
+	 * pantalla, y existe porque hay dos pasos donde elegir dejó de ser un toque.
+	 * En los dos, "tengo algo marcado" y "terminé" son cosas distintas: sin esto,
+	 * tocar el primer servicio saltaría al paso siguiente antes de poder agregar
+	 * el segundo, y asignar el último profesional cambiaría la pantalla debajo del
+	 * dedo mientras todavía se estaba revisando el primero.
+	 *
+	 * **No es un `?paso=`.** No dice en qué paso está la reserva —eso se sigue
+	 * derivando de lo elegido— y no puede contradecir a los datos: con la lista
+	 * vacía el paso es el mismo con esto o sin esto, y con algo elegido sólo
+	 * significa "seguí mostrándome la lista".
+	 */
+	picking: 'eligiendo',
 	date: 'fecha',
 	slot: 'hora',
 } as const;
@@ -51,11 +80,54 @@ export function profileHref(slug: string, categoryId?: string): string {
  */
 export const ANY_STAFF = 'cualquiera';
 
-/** `/royal-barber/reservar`, con el servicio ya elegido si se sabe cuál. */
+/**
+ * "Quiero elegir un profesional por servicio", antes de haber elegido ninguno.
+ *
+ * Es el segundo centinela y existe por lo mismo que el primero: es una decisión
+ * que tomó el cliente —repartir la reserva— y que todavía no produjo ningún id.
+ * Sin él habría que guardar en algún lado que apretó esa fila, y ese "algún
+ * lado" sería un estado que la URL no sabe y que se pierde al volver de Google.
+ *
+ * Nunca llega al backend: en cuanto cada servicio tiene su profesional, el
+ * parámetro pasa a ser la lista de ids.
+ */
+export const PER_SERVICE_STAFF = 'porservicio';
+
+/** Los dos valores de `eligiendo`. Ver `BOOKING_PARAM.picking`. */
+export const PICKING_SERVICES = 'servicios';
+export const PICKING_STAFF = 'profesionales';
+
+/**
+ * `/royal-barber/reservar`, con un servicio ya marcado si se sabe cuál.
+ *
+ * Entrar desde un servicio concreto **abre el paso de servicios con ése
+ * tildado**, y no se lo saltea: es la única forma de que alguien descubra que
+ * puede sumar otro. El costo es un toque —"Continuar"— para quien sólo quería
+ * ése, y es el toque que paga que la lista exista.
+ */
 export function bookingHref(slug: string, serviceId?: string): string {
 	const base = `/${encodeURIComponent(slug)}/reservar`;
+	if (!serviceId) return base;
 
-	return serviceId
-		? `${base}?${BOOKING_PARAM.service}=${encodeURIComponent(serviceId)}`
-		: base;
+	const query = new URLSearchParams({
+		[BOOKING_PARAM.services]: serviceId,
+		[BOOKING_PARAM.picking]: PICKING_SERVICES,
+	});
+
+	return `${base}?${query}`;
+}
+
+/**
+ * Una lista de ids escrita en la URL (`a,b,c`).
+ *
+ * Vacía cuando el parámetro no está o viene con basura, que para el flujo es lo
+ * mismo: nadie eligió nada.
+ */
+export function readIds(raw: string | null): string[] {
+	if (!raw) return [];
+
+	return raw
+		.split(',')
+		.map((part) => part.trim())
+		.filter(Boolean);
 }

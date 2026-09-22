@@ -161,22 +161,83 @@ export const booking = {
 		 * una misma voz.
 		 */
 		titles: {
-			service: 'Elegí un servicio',
+			service: 'Elegí tus servicios',
 			staff: 'Elegí un profesional',
+			/**
+			 * El paso de repartir. El título nombra el reparto y no repite
+			 * "profesional": se llega acá desde una fila que ya dijo esa palabra.
+			 */
+			staffPerService: 'Elegí quién hace cada uno',
 			slot: 'Elegí fecha y hora',
 			confirm: 'Confirmá tu reserva',
 		},
 
+		/**
+		 * La barra de abajo: lo que se lleva y el botón para seguir.
+		 *
+		 * Existe desde que elegir servicios dejó de ser un toque. En una lista de
+		 * marcar, el botón **es** la única señal de que se puede marcar más de uno:
+		 * sin él, la primera fila avanzaría sola y nadie descubriría que se puede
+		 * sumar la barba al corte.
+		 *
+		 * Dice el total y lo que dura porque son las dos cosas que cambian al
+		 * agregar algo, y las dos que alguien quiere saber antes de seguir: cuánto
+		 * sale y cuánto tiempo se va a quedar.
+		 */
+		bar: {
+			/** "1 servicio · 45 min". El precio va aparte, con su propio formato. */
+			summary: (count: number, duration: string) =>
+				`${count === 1 ? '1 servicio' : `${count} servicios`} · ${duration}`,
+			continue: 'Continuar',
+			/** Con nada marcado el botón no se puede apretar, y se dice por qué. */
+			empty: 'Elegí al menos un servicio',
+		},
+
 		service: {
-			title: 'Elegí un servicio',
+			title: 'Elegí tus servicios',
+			/** El `aria-label` de cada fila: lo que pasa al tocarla. */
+			add: (name: string) => `Agregar ${name}`,
+			remove: (name: string) => `Quitar ${name}`,
+			/** Desde los otros pasos, para volver a la lista. */
+			edit: 'Agregar o quitar servicios',
+			/**
+			 * Al llegar al tope. Dice qué hacer —sacar uno— en lugar de disculparse,
+			 * y no nombra el número: quien llegó acá ya sabe cuántos marcó.
+			 */
+			full: 'Llegaste al máximo de servicios por reserva. Sacá alguno para cambiarlo.',
 		},
 
 		staff: {
 			title: 'Elegí un profesional',
 			any: 'Cualquier profesional',
 			anyHint: 'Más horarios disponibles',
+			/**
+			 * La fila que abre el paso de repartir. Sólo aparece con más de un
+			 * servicio: con uno solo diría exactamente lo mismo que la lista de abajo.
+			 */
+			perService: 'Elegir profesional por servicio',
+			perServiceHint: 'Uno distinto para cada cosa',
 			empty:
 				'Este servicio todavía no tiene un profesional asignado. Probá con otro o escribile al negocio.',
+			/**
+			 * Nadie hace todo lo elegido.
+			 *
+			 * No es un error ni un callejón: la reserva existe igual, repartida. Por
+			 * eso el texto dice qué hacer en vez de disculparse, y la fila de repartir
+			 * queda como única salida.
+			 */
+			noneShared:
+				'Ningún profesional hace todos los servicios que elegiste. Podés repartirlos entre varios.',
+		},
+
+		/** Repartir la reserva: un profesional por servicio. */
+		staffPerService: {
+			title: 'Elegí quién hace cada uno',
+			/** El selector de cada tarjeta. */
+			label: (service: string) => `Profesional para ${service}`,
+			placeholder: 'Elegir',
+			/** Un servicio que nadie del equipo hace: no hay a quién elegir. */
+			empty: 'Nadie tiene asignado este servicio.',
 		},
 
 		slot: {
@@ -270,6 +331,20 @@ export const booking = {
 			/** Lo elegido, siempre a la vista mientras se completa el resto. */
 			with: (staffName: string) => `Con ${staffName}`,
 			anyStaff: 'Cualquier profesional',
+			/**
+			 * Cuánto dura la visita entera.
+			 *
+			 * Aparece recién con dos servicios: con uno, la duración ya está en su
+			 * propia fila y repetirla abajo sería decir dos veces el mismo número.
+			 */
+			duration: 'Duración',
+			/**
+			 * El total cuando alguno de los servicios se cotiza.
+			 *
+			 * No se suma lo que sí tiene precio: un número que ignora al servicio sin
+			 * importe se lee como lo que se va a pagar, y no lo es.
+			 */
+			quotedTotal: 'A confirmar en el local',
 		},
 
 		done: {

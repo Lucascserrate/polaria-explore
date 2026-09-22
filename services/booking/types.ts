@@ -8,6 +8,8 @@
  * archivo sea el único lugar donde la forma está escrita.
  */
 
+import type { BookingSelection } from './selection';
+
 export type BusinessStatus =
 	| { open: true; closesAt: string }
 	| {
@@ -122,24 +124,59 @@ export type PublicServiceCategory = {
 	description: string | null;
 };
 
+/**
+ * Quién puede atender lo elegido.
+ *
+ * Dos listas porque la pantalla hace dos preguntas seguidas: `shared` es quién
+ * puede con **toda** la reserva —lo que se ofrece por defecto— y `byService`
+ * quién puede con **cada** servicio, que es lo que hace falta para repartirla.
+ *
+ * Con un solo servicio las dos dicen lo mismo y la pantalla usa `shared`.
+ *
+ * **`shared` vacía con `byService` llena no es un error**: significa que nadie
+ * hace todos los servicios elegidos y que la reserva sólo existe repartida entre
+ * dos personas. La pantalla tiene que decirlo con esas palabras, no mostrar una
+ * lista vacía.
+ */
+export type PublicBookingStaff = {
+	shared: PublicStaff[];
+	/** En el mismo orden en que se pidieron los servicios. */
+	byService: { serviceId: string; staff: PublicStaff[] }[];
+};
+
+/** Un servicio dentro del comprobante, con su tramo ya resuelto. */
+export type PublicBookedService = {
+	serviceId: string;
+	name: string;
+	/** Quién lo atiende. Puede ser distinto en cada servicio de la misma reserva. */
+	staffName: string | null;
+	/** `null` si el servicio se cotiza: no hay importe que confirmar todavía. */
+	price: number | null;
+	durationMinutes: number;
+	/** Cuándo arranca **este** servicio, que no es el del bloque salvo el primero. */
+	startTime: string;
+};
+
+/**
+ * El comprobante de la reserva.
+ *
+ * Los horarios de arriba son los del **bloque**: de cuando empieza el primer
+ * servicio a cuando termina el último. Lo de cada uno va en `services`.
+ */
 export type PublicBookingConfirmation = {
 	id: string;
 	startTime: string;
 	endTime: string;
-	serviceName: string;
-	staffName: string | null;
-	/** `null` si el servicio se cotiza: no hay importe que confirmar todavía. */
-	price: number | null;
-	/** La moneda de `price`, la del servicio reservado. */
+	/** La moneda del negocio. */
 	currency: string;
+	/** La suma de los servicios: lo que dura estar ahí. */
 	durationMinutes: number;
+	/** En orden de atención. Nunca vacío. */
+	services: PublicBookedService[];
 };
 
 /** Lo que la página manda para crear la reserva. */
-export type CreateBookingInput = {
-	serviceId: string;
-	/** Ausente es "cualquier profesional". */
-	staffId?: string;
+export type CreateBookingInput = BookingSelection & {
 	startTime: string;
 	/**
 	 * Quién reserva. **Se omiten cuando hay sesión de cliente**: en ese caso los

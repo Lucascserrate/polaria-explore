@@ -1,3 +1,4 @@
+import type { BookingSelection } from './selection';
 import type { SlotsParams } from './slots';
 
 /**
@@ -16,19 +17,33 @@ import type { SlotsParams } from './slots';
  * alcanza todas las listas de horarios de ese negocio.
  */
 
+/**
+ * La selección, aplanada a algo que la caché pueda comparar.
+ *
+ * Los ids van pegados en un texto y no como arreglo: React Query compara las
+ * claves por valor, y escribirlas planas deja una clave estable aunque el flujo
+ * arme un arreglo nuevo en cada render. El orden entra tal cual porque importa:
+ * corte y barba no es lo mismo que barba y corte, ni para los horarios ni para
+ * quién atiende cada tramo.
+ */
+const selectionKey = (selection: BookingSelection | null) =>
+	[
+		selection?.serviceIds.join(',') ?? null,
+		selection?.staffIds?.join(',') ?? 'any',
+	] as const;
+
 export const bookingKeys = {
 	business: (slug: string) => ['booking', slug] as const,
 
-	staff: (slug: string, serviceId: string | null) =>
-		[...bookingKeys.business(slug), 'staff', serviceId] as const,
-
-	days: (slug: string, params: { serviceId: string; staffId?: string } | null) =>
+	staff: (slug: string, serviceIds: string[] | null) =>
 		[
 			...bookingKeys.business(slug),
-			'days',
-			params?.serviceId ?? null,
-			params?.staffId ?? 'any',
+			'staff',
+			serviceIds?.join(',') ?? null,
 		] as const,
+
+	days: (slug: string, selection: BookingSelection | null) =>
+		[...bookingKeys.business(slug), 'days', ...selectionKey(selection)] as const,
 
 	/**
 	 * Los horarios de una tanda de días candidatos.
@@ -49,8 +64,7 @@ export const bookingKeys = {
 			? ([
 					...bookingKeys.business(slug),
 					'slots',
-					params.serviceId,
-					params.staffId ?? 'any',
+					...selectionKey(params),
 					params.candidates,
 				] as const)
 			: ([...bookingKeys.business(slug), 'slots'] as const),

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Container } from '@/components/ui/container';
 import { booking } from '@/content/booking';
+import { cn } from '@/lib/utils';
 import type {
 	CustomerAppointment,
 	CustomerSession,
@@ -19,6 +20,8 @@ import {
 import { ConfirmStep } from '../components/ConfirmStep';
 import { DoneStep } from '../components/DoneStep';
 import { ExistingAppointments } from '../components/ExistingAppointments';
+import { StaffPerServiceStep } from '../components/StaffPerServiceStep';
+import { BookingBar } from '../components/BookingBar';
 import { BookingBreadcrumbs } from './BookingBreadcrumbs';
 import { BookingSummary } from './BookingSummary';
 import { PhoneDialog } from './PhoneDialog';
@@ -74,8 +77,33 @@ export function BookingScreen({
 
 	const businessHref = `/${encodeURIComponent(profile.slug)}`;
 
+	/**
+	 * En qué pasos hay una barra abajo, y cuándo deja seguir.
+	 *
+	 * Sólo en los dos que no avanzan solos: marcar servicios y repartir
+	 * profesionales. En los demás se avanza tocando una opción, y un "Continuar"
+	 * ahí sería un segundo toque para lo mismo. Ver `BookingBar`.
+	 */
+	const bar =
+		state.step === 'service'
+			? { show: true, disabled: state.services.length === 0 }
+			: state.step === 'staffPerService'
+				? {
+						show: true,
+						disabled:
+							state.staffChoice.kind !== 'perService' ||
+							state.staffChoice.staffIds.some((id) => !id),
+					}
+				: { show: false, disabled: false };
+
 	return (
-		<main className="min-h-dvh bg-paper-50 pb-24 lg:pb-10">
+		<main
+			className={cn(
+				'min-h-dvh bg-paper-50',
+				// El hueco de la barra fija. Sin ella, el aire de siempre.
+				bar.show ? 'pb-28' : 'pb-24 lg:pb-10',
+			)}
+		>
 			{/*
 			 * El encabezado de la pantalla: volver y salir. "Volver" usa el historial
 			 * del navegador —cada paso es una entrada— así que hace lo mismo que el
@@ -145,10 +173,19 @@ export function BookingScreen({
 								</h1>
 							)}
 
-							{/* En el teléfono, éste es todo el resumen que hay. */}
-							{state.service && state.step !== 'done' && (
+							{/*
+							 * En el teléfono, éste es todo el resumen que hay.
+							 *
+							 * Con varios servicios se nombran todos separados por coma y no
+							 * "3 servicios": lo que alguien quiere confirmar de un vistazo es
+							 * **qué** eligió, y un número se lo esconde. La cuenta y la
+							 * duración ya están en la barra de abajo.
+							 */}
+							{state.services.length > 0 && state.step !== 'done' && (
 								<p className="text-ink-600 lg:hidden">
-									{state.service.name}
+									{state.services
+										.map((service) => service.name)
+										.join(', ')}
 									{state.staff ? ` · ${state.staff.name}` : ''}
 								</p>
 							)}
@@ -195,6 +232,14 @@ export function BookingScreen({
 				</div>
 			</Container>
 
+			{bar.show && (
+				<BookingBar
+					state={state}
+					disabled={bar.disabled}
+					onContinue={flow.confirmPicking}
+				/>
+			)}
+
 			{askingPhone && (
 				<PhoneDialog
 					profile={profile}
@@ -226,11 +271,26 @@ function Step({
 	switch (state.step) {
 		case 'service':
 			return (
-				<ServiceStep profile={profile} onSelectService={flow.selectService} />
+				<ServiceStep
+					profile={profile}
+					state={state}
+					onToggleService={flow.toggleService}
+				/>
 			);
 
 		case 'staff':
-			return <StaffStep state={state} onSelectStaff={flow.selectStaff} />;
+			return (
+				<StaffStep
+					state={state}
+					onSelectStaff={flow.selectStaff}
+					onSelectStaffPerService={flow.selectStaffPerService}
+				/>
+			);
+
+		case 'staffPerService':
+			return (
+				<StaffPerServiceStep state={state} onAssignStaff={flow.assignStaff} />
+			);
 
 		case 'slot':
 			return (

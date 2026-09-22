@@ -3,6 +3,7 @@
 import { skipToken, useQuery } from '@tanstack/react-query';
 import { fetchDays } from '../days';
 import { bookingKeys } from '../keys';
+import type { BookingSelection } from '../selection';
 
 /**
  * Los días en que el negocio atiende.
@@ -14,12 +15,14 @@ import { bookingKeys } from '../keys';
  */
 const STALE_TIME = 5 * 60 * 1000;
 
-export type DaysParams = { serviceId: string; staffId?: string };
+export type DaysParams = BookingSelection;
 
 export function useDays(slug: string, params: DaysParams | null) {
 	return useQuery({
 		queryKey: bookingKeys.days(slug, params),
-		queryFn: params ? ({ signal }) => fetchDays(slug, params, signal) : skipToken,
+		queryFn: params
+			? ({ signal }) => fetchDays(slug, params, signal)
+			: skipToken,
 		staleTime: STALE_TIME,
 	});
 }

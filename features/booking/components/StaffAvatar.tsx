@@ -111,3 +111,49 @@ export function AnyStaffAvatar({
 		</span>
 	);
 }
+
+/**
+ * El círculo de "elegir profesional por servicio".
+ *
+ * Es una persona con un `+`, y no las dos siluetas de "cualquiera": las dos
+ * filas van una encima de la otra, y con el mismo dibujo se leerían como dos
+ * maneras de decir lo mismo. Acá lo que se ofrece es sumar a alguien más a la
+ * reserva, no dejarla en manos del negocio.
+ *
+ * Está por la misma razón de alineación que el otro: sin círculo, esa fila
+ * rompe la columna de nombres.
+ */
+export function PerServiceAvatar({
+	size,
+	selected,
+}: {
+	size: number;
+	selected?: boolean;
+}) {
+	return (
+		<span
+			className={cn(
+				'flex shrink-0 items-center justify-center rounded-full',
+				selected ? 'bg-white/15 text-white/80' : 'bg-paper-200 text-ink-500',
+			)}
+			style={{ width: size, height: size }}
+		>
+			<svg
+				aria-hidden="true"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				style={{
+					width: Math.round(size * 0.55),
+					height: Math.round(size * 0.55),
+				}}
+			>
+				<circle cx="10" cy="8" r="3.4" />
+				<path d="M3.6 19.4c0-3.1 2.9-5.2 6.4-5.2 1.2 0 2.3.2 3.2.7-.6.9-1 2-1 3.2 0 .8.2 1.5.5 2.2H4.5a.9.9 0 0 1-.9-.9Z" />
+				<path
+					d="M18.2 13.6a.8.8 0 0 1 .8.8v1.6h1.6a.8.8 0 0 1 0 1.6H19v1.6a.8.8 0 0 1-1.6 0v-1.6h-1.6a.8.8 0 0 1 0-1.6h1.6v-1.6a.8.8 0 0 1 .8-.8Z"
+					opacity=".75"
+				/>
+			</svg>
+		</span>
+	);
+}

@@ -1,5 +1,6 @@
 import { getServiceableDays } from "@/services/booking/server/days";
 import { toErrorResponse } from "@/services/booking/server/request";
+import { readSelection } from "@/services/booking/selection";
 
 /**
  * Los días que el negocio atiende, para no dejar tocar una fecha que no lleva a
@@ -12,9 +13,9 @@ export async function GET(
   const { slug } = await params;
   const query = new URL(request.url).searchParams;
 
-  const serviceId = query.get("serviceId");
-  if (!serviceId) {
-    return Response.json({ message: "Falta serviceId" }, { status: 400 });
+  const selection = readSelection(query);
+  if (!selection) {
+    return Response.json({ message: "Faltan los servicios" }, { status: 400 });
   }
 
   const days = Number(query.get("days"));
@@ -22,8 +23,7 @@ export async function GET(
   try {
     return Response.json(
       await getServiceableDays(slug, {
-        serviceId,
-        staffId: query.get("staffId") ?? undefined,
+        ...selection,
         days: Number.isFinite(days) && days > 0 ? days : undefined,
       }),
     );

@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { booking } from '@/content/booking';
 import { cn } from '@/lib/utils';
-import { BOOKING_PARAM, bookingHref } from '../booking-url';
+import {
+	BOOKING_PARAM,
+	PICKING_SERVICES,
+	bookingHref,
+} from '../booking-url';
 import type { BookingStep } from '../useBookingFlow';
 
 /**
@@ -17,16 +21,29 @@ import type { BookingStep } from '../useBookingFlow';
  * Sólo se puede ir hacia atrás. Los pasos que faltan se ven pero no se tocan:
  * saltar a "hora" sin servicio no lleva a ninguna parte, porque el paso se
  * deriva de lo elegido y volvería solo al primero.
+ *
+ * **Siguen siendo cuatro aunque los pasos ahora sean cinco.** Repartir la
+ * reserva entre varios profesionales es una forma de contestar "profesional", no
+ * una etapa más de la reserva: quien está ahí sigue resolviendo lo mismo, y una
+ * miga de más haría parecer más largo un flujo que no cambió de largo.
  */
 
-type NamedStep = Exclude<BookingStep, 'done'>;
+type NamedStep = Exclude<BookingStep, 'done' | 'staffPerService'>;
 
 const ORDER: NamedStep[] = ['service', 'staff', 'slot', 'confirm'];
 
+/** En qué miga se para cada paso. Repartir cae en la de profesional. */
+const CRUMB_OF: Record<Exclude<BookingStep, 'done'>, NamedStep> = {
+	service: 'service',
+	staff: 'staff',
+	staffPerService: 'staff',
+	slot: 'slot',
+	confirm: 'confirm',
+};
+
 /** Qué se borra de la URL para volver a cada paso. */
-const CLEARS: Record<string, string[]> = {
+const CLEARS: Record<NamedStep, string[]> = {
 	service: [
-		BOOKING_PARAM.service,
 		BOOKING_PARAM.staff,
 		BOOKING_PARAM.date,
 		BOOKING_PARAM.slot,
@@ -50,14 +67,15 @@ export function BookingBreadcrumbs({
 	// reservado sólo pueden confundir.
 	if (step === 'done') return null;
 
-	const currentIndex = ORDER.indexOf(step);
+	const current = CRUMB_OF[step];
+	const currentIndex = ORDER.indexOf(current);
 
 	return (
 		<nav aria-label={booking.flow.steps.label}>
 			<ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 				{ORDER.map((item, index) => {
 					const label = booking.flow.steps[item];
-					const isCurrent = item === step;
+					const isCurrent = item === current;
 					const isPast = index < currentIndex;
 
 					return (
@@ -93,10 +111,20 @@ export function BookingBreadcrumbs({
 	);
 }
 
-/** La misma dirección, sin lo que se eligió después de ese paso. */
+/**
+ * La misma dirección, sin lo que se eligió después de ese paso.
+ *
+ * Volver a "Servicio" **conserva los servicios y reabre la lista** en vez de
+ * vaciarla, que es lo que hacía antes: con uno solo, borrar y volver a elegir
+ * era lo mismo; con varios, quien vuelve a agregar la barba perdería el corte
+ * que ya había marcado.
+ */
 function hrefFor(slug: string, step: NamedStep, search: string): string {
 	const next = new URLSearchParams(search);
-	for (const param of CLEARS[step] ?? []) next.delete(param);
+	for (const param of CLEARS[step]) next.delete(param);
+
+	if (step === 'service') next.set(BOOKING_PARAM.picking, PICKING_SERVICES);
+	else next.delete(BOOKING_PARAM.picking);
 
 	const query = next.toString();
 	return query ? `${bookingHref(slug)}?${query}` : bookingHref(slug);

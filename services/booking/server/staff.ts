@@ -1,13 +1,14 @@
 import 'server-only';
 
-import type { PublicStaff } from '../types';
+import type { PublicBookingStaff } from '../types';
+import { selectionQuery } from '../selection';
 import { businessPath, request } from './request';
 
-/** Servicio: los profesionales que hacen un servicio. */
-export function getStaffForService(
+/** Servicio: quién puede atender los servicios elegidos. Ver `PublicBookingStaff`. */
+export function getStaffForServices(
 	slug: string,
-	serviceId: string,
-): Promise<PublicStaff[]> {
-	const query = new URLSearchParams({ serviceId });
-	return request<PublicStaff[]>(`${businessPath(slug)}/staff?${query}`);
+	serviceIds: string[],
+): Promise<PublicBookingStaff> {
+	const query = selectionQuery({ serviceIds });
+	return request<PublicBookingStaff>(`${businessPath(slug)}/staff?${query}`);
 }

@@ -15,16 +15,22 @@ import type {
 	PublicSlot,
 	PublicStaff,
 } from '@/services/booking/types';
-import { AnyStaffAvatar, StaffAvatar } from './StaffAvatar';
+import { MAX_SERVICES_PER_BOOKING } from '@/services/booking/selection';
+import { AnyStaffAvatar, PerServiceAvatar, StaffAvatar } from './StaffAvatar';
 
 /**
- * Los tres pasos en los que se elige: servicio, profesional y horario.
+ * Los pasos en los que se elige: servicios, profesional y horario.
  *
  * Todos comparten la misma forma —una lista de opciones grandes, tocables con
  * el pulgar— porque el flujo se diseñó para el teléfono: la mayoría de la gente
  * llega a esta página desde un enlace de WhatsApp, de Instagram o de un QR
  * pegado en el mostrador. En una pantalla ancha las mismas listas se ven
  * holgadas, que es el problema barato de los dos.
+ *
+ * **El de servicios es el único de marcar y no de elegir**, y esa diferencia se
+ * ve: sus filas no avanzan al tocarlas, se tildan. Lo que avanza es el botón de
+ * la barra de abajo (`BookingBar`), que además es la única señal de que se puede
+ * marcar más de uno.
  */
 
 /**
@@ -36,8 +42,9 @@ import { AnyStaffAvatar, StaffAvatar } from './StaffAvatar';
  * haya cuenta o no.
  */
 type Handlers = {
-	onSelectService: (service: PublicService) => void;
+	onToggleService: (service: PublicService) => void;
 	onSelectStaff: (staff: PublicStaff | null) => void;
+	onSelectStaffPerService: () => void;
 	onSelectDate: (date: string) => void;
 	onSelectSlot: (slot: PublicSlot) => void;
 };
@@ -99,55 +106,202 @@ function OptionRow({
 	);
 }
 
+/**
+ * El paso de servicios: una lista de marcar.
+ *
+ * **La fila marcada no se pinta entera de negro**, al revés que en los otros
+ * pasos, y la diferencia es de significado: ahí el negro señala la única opción
+ * elegida, y acá puede haber tres marcadas a la vez. Tres filas negras seguidas
+ * se leen como un bloque y no como una lista, así que lo marcado se dice con el
+ * borde y con el círculo de la derecha —el mismo lugar donde estaba el `+` que
+ * se acaba de tocar—.
+ */
 export function ServiceStep({
 	profile,
-	onSelectService,
+	state,
+	onToggleService,
 }: {
 	profile: PublicBusinessProfile;
-	onSelectService: Handlers['onSelectService'];
+	state: BookingFlowState;
+	onToggleService: Handlers['onToggleService'];
 }) {
+	const chosen = new Set(state.services.map((service) => service.id));
+
+	/*
+	 * Al llegar al tope, lo que no está marcado se apaga en vez de rechazar el
+	 * toque en silencio: una fila que no reacciona se lee como un error de la
+	 * página. Lo ya marcado sigue tocándose, porque sacar algo es justamente la
+	 * salida de este estado.
+	 */
+	const full = chosen.size >= MAX_SERVICES_PER_BOOKING;
+
 	return (
 		<div className="space-y-2">
+			{full && <EmptyNote>{booking.flow.service.full}</EmptyNote>}
+
 			{profile.services.map((service) => (
-				<OptionRow
+				<ServiceRow
 					key={service.id}
-					title={service.name}
-					hint={formatDuration(service.durationMinutes)}
-					meta={formatServicePrice(service.price, service.currency)}
-					onClick={() => onSelectService(service)}
+					service={service}
+					selected={chosen.has(service.id)}
+					disabled={full && !chosen.has(service.id)}
+					onClick={() => onToggleService(service)}
 				/>
 			))}
 		</div>
 	);
 }
 
+function ServiceRow({
+	service,
+	selected,
+	disabled,
+	onClick,
+}: {
+	service: PublicService;
+	selected: boolean;
+	disabled: boolean;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			disabled={disabled}
+			aria-pressed={selected}
+			aria-label={
+				selected
+					? booking.flow.service.remove(service.name)
+					: booking.flow.service.add(service.name)
+			}
+			className={cn(
+				'flex w-full items-start justify-between gap-4 rounded-2xl px-4 py-4 text-left',
+				'ring-inset transition-colors',
+				selected ? 'ring-2 ring-ink-950' : 'ring-1 ring-paper-300',
+				disabled ? 'opacity-40' : 'hover:bg-paper-200 active:bg-paper-300',
+			)}
+		>
+			<span className="min-w-0 flex-1">
+				<span className="block font-medium">{service.name}</span>
+				<span className="mt-0.5 block text-sm text-ink-500">
+					{formatDuration(service.durationMinutes)}
+				</span>
+				{/*
+				 * La descripción se recorta a dos líneas. Es la que el negocio escribió
+				 * para su catálogo y puede ser un párrafo: entera, una sola fila
+				 * ocuparía la pantalla y la lista dejaría de poder recorrerse.
+				 */}
+				{service.description && (
+					<span className="mt-2 line-clamp-2 block text-sm text-ink-600">
+						{service.description}
+					</span>
+				)}
+				<span
+					className={cn(
+						'mt-2 block',
+						service.price === null
+							? 'text-sm text-ink-500'
+							: 'font-semibold tabular-nums',
+					)}
+				>
+					{formatServicePrice(service.price, service.currency)}
+				</span>
+			</span>
+
+			{/*
+			 * El círculo es `aria-hidden`: lo que hace la fila ya lo dice su
+			 * `aria-label`, y `aria-pressed` dice si está marcada. Anunciarlo tres
+			 * veces es peor que una.
+			 */}
+			<span
+				aria-hidden="true"
+				className={cn(
+					'mt-1 grid size-8 shrink-0 place-items-center rounded-full transition-colors',
+					selected
+						? 'bg-ink-950 text-white'
+						: 'text-ink-700 ring-1 ring-paper-300 ring-inset',
+				)}
+			>
+				<svg
+					viewBox="0 0 24 24"
+					className="size-4"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth={2.5}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
+					{selected ? <path d="m5 13 4 4L19 7" /> : <path d="M12 5v14M5 12h14" />}
+				</svg>
+			</span>
+		</button>
+	);
+}
+
 export function StaffStep({
 	state,
 	onSelectStaff,
+	onSelectStaffPerService,
 }: {
 	state: BookingFlowState;
 	onSelectStaff: Handlers['onSelectStaff'];
+	onSelectStaffPerService: Handlers['onSelectStaffPerService'];
 }) {
 	if (state.loading && state.staffOptions.length === 0) return <StepSkeleton />;
 
-	if (state.staffOptions.length === 0) {
+	/*
+	 * Repartir sólo tiene sentido con más de un servicio: con uno, "uno por
+	 * servicio" y "uno para todo" son la misma pregunta hecha dos veces.
+	 */
+	const canSplit = state.services.length > 1;
+
+	/*
+	 * Nadie hace todo lo elegido. No es un callejón —la reserva existe repartida—
+	 * así que en lugar de una lista vacía se explica y queda la fila que resuelve.
+	 */
+	const noneShared = state.staffOptions.length === 0;
+
+	if (noneShared && !canSplit) {
 		return <EmptyNote>{booking.flow.staff.empty}</EmptyNote>;
 	}
 
 	return (
 		<div className="space-y-2">
+			{noneShared && <EmptyNote>{booking.flow.staff.noneShared}</EmptyNote>}
+
 			{/*
 			 * "Cualquier profesional" va primero y no al final: es la opción con más
 			 * horarios y la que elige la mayoría de la gente que no tiene preferencia,
 			 * que en una barbería es casi todo el mundo la primera vez.
+			 *
+			 * Con varios servicios sigue queriendo decir **una sola persona para
+			 * todo**, elegida por el servidor. Repartir es la fila de abajo, y es una
+			 * decisión distinta que hay que tomar a propósito.
 			 */}
-			<OptionRow
-				title={booking.flow.staff.any}
-				hint={booking.flow.staff.anyHint}
-				leading={<AnyStaffAvatar size={44} selected={state.staff === null} />}
-				selected={state.staff === null}
-				onClick={() => onSelectStaff(null)}
-			/>
+			{!noneShared && (
+				<OptionRow
+					title={booking.flow.staff.any}
+					hint={booking.flow.staff.anyHint}
+					leading={
+						<AnyStaffAvatar
+							size={44}
+							selected={state.staffChoice.kind === 'any'}
+						/>
+					}
+					selected={state.staffChoice.kind === 'any'}
+					onClick={() => onSelectStaff(null)}
+				/>
+			)}
+
+			{canSplit && (
+				<OptionRow
+					title={booking.flow.staff.perService}
+					hint={booking.flow.staff.perServiceHint}
+					leading={<PerServiceAvatar size={44} selected={false} />}
+					onClick={onSelectStaffPerService}
+				/>
+			)}
+
 			{state.staffOptions.map((member) => (
 				<OptionRow
 					key={member.id}
@@ -265,7 +419,7 @@ export function SlotStep({
 
 // ---------------------------------------------------------------------------
 
-function EmptyNote({ children }: { children: React.ReactNode }) {
+export function EmptyNote({ children }: { children: React.ReactNode }) {
 	return (
 		<p className="rounded-2xl bg-paper-200 px-5 py-6 text-center text-ink-600">
 			{children}
@@ -279,7 +433,7 @@ function EmptyNote({ children }: { children: React.ReactNode }) {
  * Tres barras del alto de una fila: la lista aparece en el mismo lugar donde ya
  * estaba el hueco, así que la pantalla no salta cuando llega la respuesta.
  */
-function StepSkeleton() {
+export function StepSkeleton() {
 	return (
 		<div className="space-y-2" aria-live="polite" aria-busy="true">
 			<span className="sr-only">{booking.flow.slot.loading}</span>

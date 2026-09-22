@@ -1,22 +1,25 @@
 import type { PublicSlot } from './types';
 import { bookingPath, getJson } from './request';
+import { selectionQuery, type BookingSelection } from './selection';
 
-export type SlotsParams = {
-	serviceId: string;
-	staffId?: string;
-};
+export type SlotsParams = BookingSelection;
 
-/** Servicio: los horarios libres de un día. */
+/**
+ * Servicio: los horarios libres de un día.
+ *
+ * Con varios servicios el horario es el del **bloque entero** —la suma de las
+ * duraciones, encadenadas— y no el de cada uno: lo que se elige es a qué hora
+ * empieza la visita.
+ */
 export function fetchSlots(
 	slug: string,
 	params: SlotsParams & { date: string },
 	signal?: AbortSignal,
 ): Promise<PublicSlot[]> {
-	const query = new URLSearchParams({
-		serviceId: params.serviceId,
-		date: params.date,
-	});
-	if (params.staffId) query.set('staffId', params.staffId);
+	const { date, ...selection } = params;
+
+	const query = selectionQuery(selection);
+	query.set('date', date);
 
 	return getJson(`${bookingPath(slug)}/slots?${query}`, signal);
 }

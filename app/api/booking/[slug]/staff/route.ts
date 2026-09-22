@@ -1,8 +1,9 @@
-import { getStaffForService } from "@/services/booking/server/staff";
+import { getStaffForServices } from "@/services/booking/server/staff";
 import { toErrorResponse } from "@/services/booking/server/request";
+import { readSelection } from "@/services/booking/selection";
 
 /**
- * Los profesionales que hacen un servicio.
+ * Quién puede atender los servicios elegidos.
  *
  * Los handlers de `app/api/booking/` son pasamanos: reciben lo que el navegador
  * necesita preguntar y se lo delegan a la API de Polaria desde el servidor.
@@ -17,14 +18,16 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const serviceId = new URL(request.url).searchParams.get("serviceId");
+  const selection = readSelection(new URL(request.url).searchParams);
 
-  if (!serviceId) {
-    return Response.json({ message: "Falta serviceId" }, { status: 400 });
+  if (!selection) {
+    return Response.json({ message: "Faltan los servicios" }, { status: 400 });
   }
 
   try {
-    return Response.json(await getStaffForService(slug, serviceId));
+    return Response.json(
+      await getStaffForServices(slug, selection.serviceIds),
+    );
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -137,6 +137,7 @@ servicio; si es una petición que la pantalla observa, además tiene un hook.**
 ```
 services/booking/
   types.ts            el contrato de la API (la única copia)
+  selection.ts        qué servicios y con quién: la forma que cruza las 5 capas
   request.ts          transporte del navegador → /api/booking/...
   keys.ts             las claves de React Query
   staff.ts  days.ts  slots.ts  bookings.ts      un servicio por archivo
@@ -162,6 +163,11 @@ piden el layout y la pantalla— y **los dos devuelven vacío en lugar de romper
 cuando la API no contesta: sin sesión hay que ofrecer iniciarla, y sin turnos
 hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
 
+- **`selection.ts` no lleva `'use client'` ni `server-only`**, y es a propósito:
+  la selección —los servicios y su profesional— la escriben y la leen las cinco
+  capas que hay entre el navegador y la API (el flujo, los servicios del
+  navegador, los pasamanos, los servicios del servidor y las claves de caché).
+  Escribir `serviceIds` de cinco formas es una lista desalineada esperando.
 - **`services/booking/server/` es `server-only`.** Si alguien lo importa desde un
   componente de cliente, el build falla en lugar de mandar la URL interna de la
   API al navegador. El navegador habla con `app/api/booking/[slug]/*`, que son
@@ -204,6 +210,42 @@ hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
   siempre: ni login, ni una espera de más. Detectar el turno de un visitante
   anónimo es otro problema —habría que identificarlo por teléfono, que es un
   identificador y no una credencial— y no se resuelve de este lado.
+- **Una reserva lleva uno o varios servicios encadenados**, y eso cambió la
+  forma del flujo. Lo que hay que entender antes de tocarlo:
+  - **El primer paso es de marcar, no de elegir.** Tocar un servicio ya no
+    avanza: se marcan los que se quieran y se pasa con el botón de
+    `BookingBar`. Ese botón es, además, la única señal de que se puede marcar
+    más de uno —si la primera fila avanzara sola, nadie descubriría que puede
+    sumarle la barba al corte—. Por lo mismo, **"Reservar" en un servicio de la
+    página del negocio ya no se saltea el paso**: entra con ése tildado.
+  - **El orden de `?servicios=` es el orden de atención**, y no se reordena en
+    ninguna capa: es el que se ve en el resumen y el que el backend encadena.
+  - **`?eligiendo=` es el único estado de pantalla del flujo.** No es un
+    `?paso=` —el paso se sigue derivando de lo elegido— sino la respuesta a
+    algo que los datos no pueden contestar: "tengo algo marcado" y "terminé de
+    marcar" son distintos, y sin esto el primer toque saltaría de paso y la
+    última asignación de profesional cambiaría la pantalla debajo del dedo.
+  - **El profesional tiene tres formas y viven en un solo parámetro**
+    (`?profesionales=`): `cualquiera`, un id para toda la reserva, o una lista
+    alineada con los servicios. `porservicio` es el centinela de "pedí
+    repartirla y todavía no asigné a nadie", y nunca llega al backend. Tres
+    parámetros sueltos permitirían combinaciones a las que habría que decidir
+    cuál creerle.
+  - **Por defecto atiende una sola persona.** "Cualquier profesional" con dos
+    servicios sigue queriendo decir *uno solo para todo* —el backend lo exige
+    con `requireSingleStaff`—: quien no eligió a nadie no está pidiendo que lo
+    pasen de silla en silla. Repartir es una fila aparte que hay que tocar.
+  - **Que nadie haga todo lo elegido no es un error.** `staff.shared` vacía con
+    `byService` llena significa que la reserva sólo existe repartida, y la
+    pantalla lo dice con esas palabras en lugar de mostrar una lista vacía.
+  - **El tope de servicios está escrito dos veces a propósito**
+    (`MAX_SERVICES_PER_BOOKING`, acá y en la API). Son dos despliegues; sin la
+    copia del sitio, el sexto servicio se marcaría y moriría en un 400 al pedir
+    horarios.
+  - **Lo que no vino de las referencias, y por qué.** No hay pestaña "Combos":
+    Polaria no tiene paquetes, y una pestaña vacía es una promesa incumplida.
+    No hay precio por profesional: el precio es del servicio, y un "desde 400"
+    bajo la foto de alguien sería un número inventado sobre un negocio real.
 - **Las fotos son opcionales, y sin fotos no hay hueco.** La galería
   (`BusinessGallery`) no dibuja nada cuando el negocio no subió ninguna, que es
   el caso de casi todos: la página tiene que verse terminada así. Las sube el
