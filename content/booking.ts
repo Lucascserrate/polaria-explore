@@ -182,18 +182,6 @@ export const booking = {
 			confirm: 'Confirmá tu reserva',
 		},
 
-		/**
-		 * La barra de abajo: lo que se lleva y el botón para seguir.
-		 *
-		 * Existe desde que elegir servicios dejó de ser un toque. En una lista de
-		 * marcar, el botón **es** la única señal de que se puede marcar más de uno:
-		 * sin él, la primera fila avanzaría sola y nadie descubriría que se puede
-		 * sumar la barba al corte.
-		 *
-		 * Dice el total y lo que dura porque son las dos cosas que cambian al
-		 * agregar algo, y las dos que alguien quiere saber antes de seguir: cuánto
-		 * sale y cuánto tiempo se va a quedar.
-		 */
 		bar: {
 			/** "1 servicio · 45 min". El precio va aparte, con su propio formato. */
 			summary: (count: number, duration: string) =>
@@ -205,16 +193,16 @@ export const booking = {
 
 		service: {
 			title: 'Elegí tus servicios',
-			/** El `aria-label` de cada fila: lo que pasa al tocarla. */
 			add: (name: string) => `Agregar ${name}`,
 			remove: (name: string) => `Quitar ${name}`,
-			/** Desde los otros pasos, para volver a la lista. */
 			edit: 'Agregar o quitar servicios',
 			/**
 			 * Al llegar al tope. Dice qué hacer —sacar uno— en lugar de disculparse,
 			 * y no nombra el número: quien llegó acá ya sabe cuántos marcó.
 			 */
 			full: 'Llegaste al máximo de servicios por reserva. Sacá alguno para cambiarlo.',
+			categoriesLabel: 'Ir a una categoría',
+			uncategorized: 'Otros',
 		},
 
 		staff: {
@@ -259,10 +247,6 @@ export const booking = {
 		slot: {
 			title: 'Elegí fecha y hora',
 			loading: 'Buscando horarios…',
-			/**
-			 * Un día sin cupo no es un error: es información. Por eso el texto empuja
-			 * a la acción que resuelve —probar otro día— en lugar de disculparse.
-			 */
 			empty: 'No quedan horarios este día. Probá con otra fecha.',
 			noDays:
 				'No hay días con atención en las próximas semanas. Escribile al negocio para coordinar.',
