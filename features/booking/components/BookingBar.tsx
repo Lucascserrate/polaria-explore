@@ -1,9 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { booking } from '@/content/booking';
+import { cn } from '@/lib/utils';
 import { formatDuration, formatPrice } from '../format';
 import type { BookingFlowState } from '../useBookingFlow';
+import { BookingBreakdown } from './BookingBreakdown';
+import { Chevron } from './Chevron';
 
 /**
  * La barra fija de abajo: lo que se lleva, y el botón para seguir.
@@ -28,6 +32,13 @@ import type { BookingFlowState } from '../useBookingFlow';
  * Va fija abajo en el teléfono y en el flujo del escritorio también: la lista de
  * servicios de un negocio con veinte filas no entra en pantalla, y un botón al
  * final obligaría a recorrerla entera para seguir.
+ *
+ * **El lado izquierdo abre el desglose** (`BookingBreakdown`). El total es la
+ * suma de lo que se fue marcando varias pantallas arriba, y en el teléfono no
+ * había dónde revisarlo: la columna que lo detalla en escritorio
+ * (`BookingSummary`) ahí no se dibuja. Abre el resumen y no "Continuar" porque
+ * el botón es lo único que no se puede tocar por accidente en una barra pegada
+ * al pulgar.
  */
 export function BookingBar({
 	state,
@@ -42,45 +53,96 @@ export function BookingBar({
 	const { services, durationMinutes, totalPrice } = state;
 	const currency = services[0]?.currency;
 
-	return (
-		<div className="fixed inset-x-0 bottom-0 z-40 border-t border-paper-300 bg-paper-50/95 backdrop-blur">
-			<div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
-				<div className="min-w-0">
-					{/*
-					 * El importe arriba y el detalle abajo, que es el orden en que se
-					 * leen: lo primero que se mira de un carrito es cuánto sale.
-					 *
-					 * Con algún servicio que se cotiza no hay total —ver `totalPrice`— y
-					 * en su lugar va la frase, no una suma parcial que se leería como el
-					 * precio final.
-					 */}
-					<p className="truncate font-semibold tabular-nums">
-						{services.length === 0
-							? booking.flow.bar.empty
-							: totalPrice === null || !currency
-								? booking.flow.summary.quotedTotal
-								: formatPrice(totalPrice, currency)}
-					</p>
+	const [open, setOpen] = useState(false);
 
-					{services.length > 0 && (
-						<p className="truncate text-sm text-ink-600">
-							{booking.flow.bar.summary(
-								services.length,
-								formatDuration(durationMinutes),
-							)}
-						</p>
+	/*
+	 * Sin nada marcado no hay desglose: el lado izquierdo dice qué falta y no
+	 * abre nada. Un botón que abre una hoja vacía es peor que un texto.
+	 */
+	const hasBreakdown = services.length > 0;
+
+	const summary = (
+		<>
+			{/*
+			 * El importe arriba y el detalle abajo, que es el orden en que se leen:
+			 * lo primero que se mira de un carrito es cuánto sale.
+			 *
+			 * Con algún servicio que se cotiza no hay total —ver `totalPrice`— y en
+			 * su lugar va la frase, no una suma parcial que se leería como el precio
+			 * final.
+			 */}
+			<span className="block truncate font-semibold tabular-nums">
+				{services.length === 0
+					? booking.flow.bar.empty
+					: totalPrice === null || !currency
+						? booking.flow.summary.quotedTotal
+						: formatPrice(totalPrice, currency)}
+			</span>
+
+			{hasBreakdown && (
+				<span className="flex items-center gap-1 truncate text-sm text-ink-600">
+					{booking.flow.bar.summary(
+						services.length,
+						formatDuration(durationMinutes),
 					)}
-				</div>
+					{/*
+					 * La flecha hacia arriba es toda la señal de que esto se abre. Un
+					 * "Ver detalle" escrito sería una tercera línea de texto en una barra
+					 * de dos, al lado de un botón que dice lo que hay que hacer.
+					 */}
+					<Chevron className="size-4 shrink-0 -rotate-90" />
+				</span>
+			)}
+		</>
+	);
 
-				<Button
-					size="lg"
-					className="shrink-0"
-					disabled={disabled}
-					onClick={onContinue}
-				>
-					{booking.flow.bar.continue}
-				</Button>
+	return (
+		<>
+			<div className="fixed inset-x-0 bottom-0 z-40 border-t border-paper-300 bg-paper-50/95 backdrop-blur">
+				<div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
+					{hasBreakdown ? (
+						<button
+							type="button"
+							onClick={() => setOpen(true)}
+							aria-haspopup="dialog"
+							aria-expanded={open}
+							className={cn(
+								'-mx-2 min-w-0 rounded-2xl px-2 py-1 text-left',
+								'transition-colors hover:bg-paper-200 active:bg-paper-300',
+							)}
+						>
+							{summary}
+							{/*
+							 * Con el `aria-label` el nombre del botón pasaba a ser "Ver el
+							 * desglose" a secas y se perdía el importe, que es lo que un
+							 * lector de pantalla tiene que leer primero acá. Así se leen las
+							 * dos cosas, en ese orden.
+							 */}
+							<span className="sr-only">{booking.flow.breakdown.open}</span>
+						</button>
+					) : (
+						<div className="min-w-0">{summary}</div>
+					)}
+
+					<Button
+						size="lg"
+						className="shrink-0"
+						disabled={disabled}
+						onClick={onContinue}
+					>
+						{booking.flow.bar.continue}
+					</Button>
+				</div>
 			</div>
-		</div>
+
+			{open && (
+				<BookingBreakdown
+					state={state}
+					disabled={disabled}
+					onContinue={onContinue}
+					onClose={() => setOpen(false)}
+				/>
+			)}
+		</>
 	);
 }

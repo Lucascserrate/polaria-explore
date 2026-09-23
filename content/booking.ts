@@ -314,13 +314,11 @@ export const booking = {
 
 		details: {
 			title: 'Tus datos',
-			/** El resumen de la cuenta, ya con todo listo para confirmar. */
 			bookingAs: 'Reservás como',
 			name: 'Tu nombre',
 			namePlaceholder: 'Cómo te anotamos',
 			phone: 'WhatsApp',
 			phonePlaceholder: '70123456',
-			/** Se dice para qué se pide el número. Nadie lo deja "porque sí". */
 			phoneHint: 'Te mandamos la confirmación y el recordatorio a este número.',
 			submit: 'Confirmar reserva',
 			submitting: 'Reservando…',
@@ -347,6 +345,11 @@ export const booking = {
 			quotedTotal: 'A confirmar en el local',
 		},
 
+		breakdown: {
+			title: 'Desglose del precio',
+			open: 'Ver el desglose del precio',
+		},
+
 		done: {
 			title: '¡Listo, tu turno quedó reservado!',
 			subtitle: (name: string) =>
@@ -355,7 +358,6 @@ export const booking = {
 		},
 
 		errors: {
-			/** El 409: el horario se ocupó mientras el cliente completaba sus datos. */
 			slotTaken:
 				'Ese horario se acaba de ocupar. Elegí otro y lo intentamos de nuevo.',
 			generic: 'No pudimos completar la reserva. Probá de nuevo en un momento.',
@@ -364,12 +366,6 @@ export const booking = {
 		},
 	},
 
-	/**
-	 * Lo único que nombra a Polaria en toda la página, y va abajo del todo.
-	 *
-	 * No es publicidad puesta de contrabando en el local de otro: es la firma que
-	 * explica quién opera la reserva, del tamaño que le corresponde.
-	 */
 	footer: {
 		poweredBy: 'Reservas con',
 		product: 'Polaria',
