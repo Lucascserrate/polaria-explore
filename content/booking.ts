@@ -248,6 +248,19 @@ export const booking = {
 			title: 'Elegí fecha y hora',
 			loading: 'Buscando horarios…',
 			empty: 'No quedan horarios este día. Probá con otra fecha.',
+			/**
+			 * Debajo de la grilla, cuando los horarios de ese día no duran todos lo
+			 * mismo.
+			 *
+			 * Pasa cuando el negocio declaró que dos categorías se atienden a la vez:
+			 * a las 15:00 hay dos profesionales libres y la reserva es más corta que
+			 * a las 18:00, cuando queda una sola. Sin este aviso, los dos horarios se
+			 * ven igual y la diferencia recién aparece al confirmar.
+			 */
+			mixedDurations:
+				'Algunos horarios duran menos porque te atienden dos profesionales a la vez.',
+			/** En cada horario, cuando conviene decir hasta qué hora llega. */
+			range: (from: string, to: string) => `${from} a ${to}`,
 			noDays:
 				'No hay días con atención en las próximas semanas. Escribile al negocio para coordinar.',
 		},
@@ -336,6 +349,18 @@ export const booking = {
 			 * propia fila y repetirla abajo sería decir dos veces el mismo número.
 			 */
 			duration: 'Duración',
+			/**
+			 * Al lado de la duración, cuando la reserva se resolvió en simultáneo.
+			 *
+			 * Es lo que explica por qué dos servicios de una hora duran una hora. Sin
+			 * esto el número parece un error de la página.
+			 */
+			parallel: 'Dos profesionales a la vez',
+			/**
+			 * Mientras no hay horario elegido y el día tiene horarios de distinta
+			 * duración: lo que se puede prometer es un rango, no un número.
+			 */
+			durationRange: (from: string, to: string) => `${from} a ${to}`,
 			/**
 			 * El total cuando alguno de los servicios se cotiza.
 			 *

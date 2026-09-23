@@ -673,6 +673,21 @@ export function SlotStep({
 		);
 	}
 
+	/*
+	 * Si los horarios de este día no duran todos lo mismo.
+	 *
+	 * Ocurre cuando el negocio declaró que dos categorías se atienden a la vez:
+	 * a las 15:00 hay dos profesionales libres y la reserva es más corta que a
+	 * las 18:00, con una sola. Son horarios distintos de verdad, y la grilla
+	 * tiene que decirlo antes de que el cliente elija.
+	 */
+	const mixedDurations = new Set(
+		state.slots.map(
+			(slot) =>
+				new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime(),
+		),
+	).size > 1;
+
 	return (
 		<div className="space-y-6">
 			{/*
@@ -728,22 +743,40 @@ export function SlotStep({
 			) : state.slots.length === 0 ? (
 				<EmptyNote>{booking.flow.slot.empty}</EmptyNote>
 			) : (
-				<div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-					{state.slots.map((slot) => (
-						<button
-							key={slot.startTime}
-							type="button"
-							onClick={() => onSelectSlot(slot)}
-							className={cn(
-								'rounded-xl py-3 text-center text-sm font-medium tabular-nums',
-								'ring-1 ring-paper-300 ring-inset transition-colors',
-								'hover:bg-ink-950 hover:text-white hover:ring-ink-950',
-							)}
-						>
-							{formatTime(slot.startTime, profile.timezone)}
-						</button>
-					))}
-				</div>
+				<>
+					<div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+						{state.slots.map((slot) => (
+							<button
+								key={slot.startTime}
+								type="button"
+								onClick={() => onSelectSlot(slot)}
+								className={cn(
+									'rounded-xl py-3 text-center text-sm font-medium tabular-nums',
+									'ring-1 ring-paper-300 ring-inset transition-colors',
+									'hover:bg-ink-950 hover:text-white hover:ring-ink-950',
+								)}
+							>
+								{formatTime(slot.startTime, profile.timezone)}
+								{/*
+								 * El fin sólo cuando los horarios del día no duran todos lo
+								 * mismo. Repetirlo cuando todos son iguales llena la grilla de
+								 * un dato que ya está arriba, en la duración de la reserva.
+								 */}
+								{mixedDurations && (
+									<span className="mt-0.5 block text-xs font-normal text-ink-500">
+										{formatTime(slot.endTime, profile.timezone)}
+									</span>
+								)}
+							</button>
+						))}
+					</div>
+
+					{mixedDurations && (
+						<p className="mt-3 text-xs text-ink-500">
+							{booking.flow.slot.mixedDurations}
+						</p>
+					)}
+				</>
 			)}
 		</div>
 	);

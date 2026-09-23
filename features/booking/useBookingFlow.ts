@@ -126,8 +126,35 @@ export type BookingFlowState = {
 	step: BookingStep;
 	/** Los servicios elegidos, en orden de atención. Vacío en el primer paso. */
 	services: PublicService[];
-	/** La suma de las duraciones: lo que va a durar estar ahí. */
+	/**
+	 * Lo que va a durar estar ahí.
+	 *
+	 * Con un horario elegido es **el de ese horario**, y no la suma de los
+	 * servicios. Dejaron de ser lo mismo: si el negocio declaró que dos
+	 * categorías se atienden a la vez y a esa hora hay dos profesionales libres,
+	 * una manicure y una pedicure de una hora cada una son una hora, no dos.
+	 *
+	 * Sin horario elegido todavía es la suma, que es lo más largo que puede
+	 * llegar a durar. Ver `shortestDurationMinutes` para el otro extremo.
+	 */
 	durationMinutes: number;
+	/**
+	 * Lo menos que puede llegar a durar, según los horarios que hay ese día.
+	 *
+	 * Distinto de `durationMinutes` sólo cuando algún horario del día resuelve la
+	 * reserva en simultáneo. Sirve para no prometer un número antes de que el
+	 * cliente elija: entre "1 h" y "2 h", lo honesto es decir las dos.
+	 */
+	shortestDurationMinutes: number;
+	/**
+	 * Si el horario elegido reparte la reserva entre dos personas a la vez.
+	 *
+	 * Se deduce de que dure menos que la suma de los servicios, que es lo único
+	 * que puede hacerlo más corto. El servidor no publica quién atiende cada
+	 * tramo —sería exponer la agenda del equipo a cualquiera—, y para decir "te
+	 * atienden dos profesionales" alcanza con esto.
+	 */
+	isParallel: boolean;
 	/**
 	 * La suma de los precios, o `null` si alguno se cotiza.
 	 *
@@ -579,14 +606,28 @@ export function useBookingFlow(
 				null)
 			: null;
 
+	const totalServiceMinutes = services.reduce(
+		(total, service) => total + service.durationMinutes,
+		0,
+	);
+
 	return {
 		state: {
 			step,
 			services,
-			durationMinutes: services.reduce(
-				(total, service) => total + service.durationMinutes,
-				0,
-			),
+			durationMinutes: slot
+				? minutesBetween(slot.startTime, slot.endTime)
+				: totalServiceMinutes,
+			shortestDurationMinutes: slots.length
+				? Math.min(
+						...slots.map((option) =>
+							minutesBetween(option.startTime, option.endTime),
+						),
+					)
+				: totalServiceMinutes,
+			isParallel: slot
+				? minutesBetween(slot.startTime, slot.endTime) < totalServiceMinutes
+				: false,
 			totalPrice: services.some((service) => service.price === null)
 				? null
 				: services.reduce((total, service) => total + (service.price ?? 0), 0),
@@ -746,4 +787,20 @@ function messageOf(error: unknown): string | null {
 	}
 
 	return booking.flow.errors.generic;
+}
+
+/**
+ * Minutos entre dos instantes ISO, o `0` si alguno no es una fecha.
+ *
+ * Los dos vienen del servidor y son la misma reserva, así que el orden está
+ * garantizado; el `Math.max` está para que un dato roto se lea como cero y no
+ * como una duración negativa que después se imprime.
+ */
+function minutesBetween(startIso: string, endIso: string): number {
+	const start = new Date(startIso).getTime();
+	const end = new Date(endIso).getTime();
+
+	if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+
+	return Math.max(0, Math.round((end - start) / 60_000));
 }

@@ -39,7 +39,7 @@ export function BookingBreakdown({
 	onContinue: () => void;
 	onClose: () => void;
 }) {
-	const { services, durationMinutes, totalPrice } = state;
+	const { services, totalPrice } = state;
 
 	/** Escape cierra, y el fondo no se desplaza mientras esto está abierto. */
 	useEffect(() => {
@@ -144,9 +144,16 @@ export function BookingBreakdown({
 					 * número dos veces. Misma regla que `BookingSummary`.
 					 */}
 					{services.length > 1 && (
-						<div className="flex items-center justify-between gap-4 text-sm text-ink-600">
+						<div className="flex items-start justify-between gap-4 text-sm text-ink-600">
 							<p>{booking.flow.summary.duration}</p>
-							<p className="tabular-nums">{formatDuration(durationMinutes)}</p>
+							<div className="text-right">
+								<p className="tabular-nums">{durationLabel(state)}</p>
+								{state.isParallel && (
+									<p className="text-xs text-ink-500">
+										{booking.flow.summary.parallel}
+									</p>
+								)}
+							</div>
 						</div>
 					)}
 
@@ -179,5 +186,28 @@ export function BookingBreakdown({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+
+/**
+ * Cuánto dura la reserva, en una línea.
+ *
+ * Con el horario ya elegido es un número. Antes de elegirlo puede ser un rango:
+ * cuando el negocio declaró que dos categorías se atienden a la vez, el mismo
+ * pedido dura una hora en los horarios donde hay dos profesionales libres y dos
+ * donde queda una sola. Prometer el número corto sería mentirle a quien termina
+ * eligiendo el otro, y el largo, esconder lo que la función hace.
+ */
+function durationLabel(state: BookingFlowState): string {
+	const { durationMinutes, shortestDurationMinutes, slot } = state;
+
+	if (slot || shortestDurationMinutes >= durationMinutes) {
+		return formatDuration(durationMinutes);
+	}
+
+	return booking.flow.summary.durationRange(
+		formatDuration(shortestDurationMinutes),
+		formatDuration(durationMinutes),
 	);
 }
