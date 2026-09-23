@@ -79,7 +79,7 @@ export function BookingBreakdown({
 			 */}
 			<div className="flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl bg-paper-50 sm:rounded-3xl">
 				<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
-					<h2 id="titulo-desglose" className="text-2xl font-semibold">
+					<h2 id="titulo-desglose" className="text-xl font-semibold">
 						{booking.flow.breakdown.title}
 					</h2>
 

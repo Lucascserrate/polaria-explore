@@ -346,7 +346,7 @@ export const booking = {
 		},
 
 		breakdown: {
-			title: 'Desglose del precio',
+			title: 'Detalle',
 			open: 'Ver el desglose del precio',
 		},
 
