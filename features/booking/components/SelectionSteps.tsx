@@ -182,6 +182,24 @@ function groupServices(profile: PublicBusinessProfile): ServiceGroup[] {
 	return groups.length > 1 ? groups : [];
 }
 
+/**
+ * Hasta dónde tiene que subir una sección para contar como la que se mira.
+ *
+ * **Es donde la deja el salto de la fila de categorías, no el borde de la
+ * fila.** Tocar una categoría la lleva hasta su `scroll-margin-top`, que deja el
+ * título a la vista unos píxeles por debajo de la fila; medida contra el borde
+ * de la fila, la sección recién llegada todavía no lo había cruzado, y la
+ * pestaña marcada seguía siendo la anterior hasta desplazar un poco más. Leerlo
+ * del CSS hace que las dos cosas no puedan desalinearse: el margen cambia con el
+ * ancho (`scroll-mt-18 sm:scroll-mt-36`) y acá se lee el que rige.
+ *
+ * El píxel de más es por el redondeo: el navegador puede dejar la sección a
+ * 72,4 de un margen de 72.
+ */
+function line(section: HTMLElement): number {
+	return parseFloat(getComputedStyle(section).scrollMarginTop) + 1;
+}
+
 /** Cómo desplazar: quieto si la persona pidió menos movimiento. */
 function scrollBehavior(): ScrollBehavior {
 	return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -238,6 +256,9 @@ export function ServiceStep({
 
 	const [active, setActive] = useState(() => groups[0]?.id);
 
+	/** La categoría que se tocó, mientras la página va hacia ella. */
+	const target = useRef<string | null>(null);
+
 	/**
 	 * Con qué servicio se abrió el paso.
 	 *
@@ -286,9 +307,9 @@ export function ServiceStep({
 	 * el dedo. Es la última sección cuyo título ya pasó por debajo de la fila, que
 	 * es donde está mirando la persona.
 	 *
-	 * La línea se mide contra la fila misma y no contra un número: pegada arriba
-	 * mide distinto en el teléfono que en escritorio, donde además tiene la barra
-	 * del sitio encima.
+	 * La línea es la misma a la que lleva tocar una categoría —ver `line`—: si
+	 * fueran distintas, la sección recién llegada no contaría como la que se
+	 * mira.
 	 */
 	useEffect(() => {
 		if (groups.length === 0) return;
@@ -298,12 +319,22 @@ export function ServiceStep({
 		const update = () => {
 			frame = 0;
 
-			const line = (strip.current?.getBoundingClientRect().bottom ?? 0) + 1;
+			/*
+			 * Mientras la página va hacia la categoría que se tocó, manda ésa. El
+			 * desplazamiento pasa por las del medio, y sin esto la fila las
+			 * recorrería de a una; y si la tocada es de las últimas y la página no
+			 * da para subirla hasta arriba, nunca llegaría a marcarse.
+			 */
+			if (target.current) {
+				setActive(target.current);
+				return;
+			}
+
 			let current = groups[0].id;
 
 			for (const group of groups) {
 				const section = sections.current.get(group.id);
-				if (section && section.getBoundingClientRect().top <= line) {
+				if (section && section.getBoundingClientRect().top <= line(section)) {
 					current = group.id;
 				}
 			}
@@ -315,13 +346,30 @@ export function ServiceStep({
 			if (!frame) frame = requestAnimationFrame(update);
 		};
 
+		/*
+		 * Lo que suelta a la categoría tocada es que la persona mueva la página
+		 * ella misma, no que el desplazamiento termine: `scrollend` no está en
+		 * todos los navegadores, y un temporizador adivinaría cuánto tarda.
+		 */
+		const release = () => {
+			if (!target.current) return;
+			target.current = null;
+			onScroll();
+		};
+
 		update();
 		window.addEventListener('scroll', onScroll, { passive: true });
 		window.addEventListener('resize', onScroll);
+		window.addEventListener('wheel', release, { passive: true });
+		window.addEventListener('touchstart', release, { passive: true });
+		window.addEventListener('keydown', release);
 
 		return () => {
 			window.removeEventListener('scroll', onScroll);
 			window.removeEventListener('resize', onScroll);
+			window.removeEventListener('wheel', release);
+			window.removeEventListener('touchstart', release);
+			window.removeEventListener('keydown', release);
 			if (frame) cancelAnimationFrame(frame);
 		};
 	}, [groups]);
@@ -348,6 +396,8 @@ export function ServiceStep({
 					groups={groups}
 					active={active}
 					onSelect={(id) => {
+						target.current = id;
+						setActive(id);
 						sections.current.get(id)?.scrollIntoView({
 							behavior: scrollBehavior(),
 							block: 'start',
@@ -451,7 +501,7 @@ function CategoryTabs({
 			 * Si la barra cambia de alto, esto y los `scroll-mt` de las secciones
 			 * cambian con ella.
 			 */
-			className="sticky top-0 z-20 -mx-5 flex gap-2 overflow-x-auto overscroll-x-contain bg-paper-50 px-5 py-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:top-18 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+			className="sticky top-0 z-20 -mx-5 flex gap-2 overflow-x-auto overscroll-x-contain bg-paper-50 px-5 py-3 [-ms-overflow-style:none] scrollbar-width:none sm:top-18 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
 		>
 			{groups.map((group) => (
 				<button
@@ -681,12 +731,13 @@ export function SlotStep({
 	 * las 18:00, con una sola. Son horarios distintos de verdad, y la grilla
 	 * tiene que decirlo antes de que el cliente elija.
 	 */
-	const mixedDurations = new Set(
-		state.slots.map(
-			(slot) =>
-				new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime(),
-		),
-	).size > 1;
+	const mixedDurations =
+		new Set(
+			state.slots.map(
+				(slot) =>
+					new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime(),
+			),
+		).size > 1;
 
 	return (
 		<div className="space-y-6">
