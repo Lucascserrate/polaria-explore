@@ -75,7 +75,7 @@ export function HistoryScreen({
 					</div>
 				</div>
 
-				<div className={cn('mt-8 lg:mt-0', focus === 'list' && 'hidden lg:block')}>
+				<div className={cn(focus === 'list' && 'hidden lg:block')}>
 					{/*
 					 * Volver al historial sólo en el teléfono: en escritorio la lista está
 					 * al lado, y una flecha para ir a algo que ya se ve sobra.
