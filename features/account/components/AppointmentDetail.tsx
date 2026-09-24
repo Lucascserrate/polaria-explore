@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { CalendarSync } from 'lucide-react';
 import { account } from '@/content/account';
 import {
 	formatDuration,
@@ -9,6 +10,7 @@ import {
 } from '@/features/booking/format';
 import { directionsUrl } from '@/features/booking/location';
 import { formatWhen } from '../format';
+import { ActionItemContent, actionItemClasses } from './ActionItem';
 import { CancelAppointment } from './CancelAppointment';
 import { StatusChip } from './StatusChip';
 import type { CustomerAppointmentDetail } from '@/services/customer/types';
@@ -201,22 +203,28 @@ export function AppointmentDetail({
 			 * "cómo llegar", que es lo que casi siempre se viene a buscar.
 			 */}
 			{cancellable && (
-				<div className="space-y-3">
+				<ul>
 					{/*
-					 * Cambiar antes que cancelar, y con más peso visual: quien no puede
-					 * venir a esa hora casi siempre quiere venir a otra. Ofrecer primero
-					 * la salida que pierde el turno sería empujar a la peor de las dos
-					 * para el cliente y para el negocio.
+					 * Cambiar antes que cancelar: quien no puede venir a esa hora casi
+					 * siempre quiere venir a otra. Ofrecer primero la salida que pierde
+					 * el turno sería empujar a la peor de las dos para el cliente y para
+					 * el negocio.
 					 */}
-					<Link
-						href={`/historial/${appointment.id}/cambiar`}
-						className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 font-medium ring-1 ring-paper-300 ring-inset transition-colors hover:bg-paper-200"
-					>
-						{account.appointment.reschedule.action}
-					</Link>
+					<li>
+						<Link
+							href={`/historial/${appointment.id}/cambiar`}
+							className={actionItemClasses}
+						>
+							<ActionItemContent icon={CalendarSync}>
+								{account.appointment.reschedule.action}
+							</ActionItemContent>
+						</Link>
+					</li>
 
-					<CancelAppointment appointmentId={appointment.id} />
-				</div>
+					<li>
+						<CancelAppointment appointmentId={appointment.id} />
+					</li>
+				</ul>
 			)}
 		</article>
 	);

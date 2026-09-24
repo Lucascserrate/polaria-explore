@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CalendarX } from 'lucide-react';
 import { account } from '@/content/account';
 import { Button } from '@/components/ui/button';
+import { ActionItemContent, actionItemClasses } from './ActionItem';
 
 /**
  * Cancelar el turno, en dos toques.
@@ -66,13 +68,15 @@ export function CancelAppointment({ appointmentId }: { appointmentId: string }) 
 	if (!asking) {
 		return (
 			<div className="space-y-2">
-				<Button
-					variant="secondary"
-					className="w-full"
+				<button
+					type="button"
+					className={actionItemClasses}
 					onClick={() => setAsking(true)}
 				>
-					{account.appointment.cancel.action}
-				</Button>
+					<ActionItemContent icon={CalendarX}>
+						{account.appointment.cancel.action}
+					</ActionItemContent>
+				</button>
 
 				{error && <p className="text-sm text-ink-600">{error}</p>}
 			</div>
