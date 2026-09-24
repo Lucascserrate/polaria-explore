@@ -105,6 +105,15 @@ export function DoneStep({
 				)}
 			</div>
 
+			{confirmation.note && (
+				<div className="space-y-2 rounded-2xl bg-paper-200 px-5 py-5 text-left">
+					<p className="font-medium">{booking.flow.done.note}</p>
+					<p className="whitespace-pre-line text-sm text-ink-700">
+						{confirmation.note}
+					</p>
+				</div>
+			)}
+
 			{/*
 			 * El ofrecimiento va arriba de la salida y con el botón lleno: es lo que
 			 * esta pantalla propone. `returnTo` apunta al turno, así que iniciar

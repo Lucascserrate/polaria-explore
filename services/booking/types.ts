@@ -148,12 +148,9 @@ export type PublicBookingStaff = {
 export type PublicBookedService = {
 	serviceId: string;
 	name: string;
-	/** Quién lo atiende. Puede ser distinto en cada servicio de la misma reserva. */
 	staffName: string | null;
-	/** `null` si el servicio se cotiza: no hay importe que confirmar todavía. */
 	price: number | null;
 	durationMinutes: number;
-	/** Cuándo arranca **este** servicio, que no es el del bloque salvo el primero. */
 	startTime: string;
 };
 
@@ -167,12 +164,11 @@ export type PublicBookingConfirmation = {
 	id: string;
 	startTime: string;
 	endTime: string;
-	/** La moneda del negocio. */
 	currency: string;
 	/** La suma de los servicios: lo que dura estar ahí. */
 	durationMinutes: number;
-	/** En orden de atención. Nunca vacío. */
 	services: PublicBookedService[];
+	note: string | null;
 };
 
 /** Lo que la página manda para crear la reserva. */

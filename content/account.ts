@@ -90,6 +90,7 @@ export const account = {
 			title: 'Dónde es',
 			directions: 'Abrir en el mapa',
 		},
+		note: 'Información importante',
 		status: {
 			pending: 'Pendiente',
 			confirmed: 'Confirmada',

@@ -148,6 +148,18 @@ export function AppointmentDetail({
 				</div>
 			</section>
 
+			{appointment.note && (
+				<section aria-labelledby="nota" className="space-y-3">
+					<h2 id="nota" className="text-xl font-semibold">
+						{account.appointment.note}
+					</h2>
+
+					<p className="rounded-2xl bg-paper-200 px-5 py-5 whitespace-pre-line text-ink-700">
+						{appointment.note}
+					</p>
+				</section>
+			)}
+
 			{(appointment.address || directions) && (
 				<section aria-labelledby="ubicacion" className="space-y-3">
 					<h2 id="ubicacion" className="text-xl font-semibold">

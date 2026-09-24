@@ -111,4 +111,5 @@ export type CustomerAppointmentDetail = CustomerAppointment & {
 	currency: string;
 	address: string | null;
 	location: { latitude: number; longitude: number } | null;
+	note: string | null;
 };

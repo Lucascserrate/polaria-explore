@@ -382,6 +382,7 @@ export const booking = {
 			close: 'Entendido',
 			/* Con cuenta, esto se ve un instante mientras se abre el turno. */
 			opening: 'Abriendo tu turno…',
+			note: 'Información importante',
 			/**
 			 * El ofrecimiento a quien reservó sin cuenta.
 			 *
