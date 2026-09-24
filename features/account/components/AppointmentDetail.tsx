@@ -42,12 +42,12 @@ export function AppointmentDetail({
 		<article className="space-y-8">
 			<header className="space-y-4">
 				{business.photoUrl && (
-					<div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-paper-200">
+					<div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-paper-200">
 						<Image
 							src={business.photoUrl}
 							alt=""
 							fill
-							sizes="(min-width: 1024px) 40rem, 100vw"
+							sizes="(min-width: 1024px) 34rem, 100vw"
 							className="object-cover"
 						/>
 					</div>
@@ -56,7 +56,7 @@ export function AppointmentDetail({
 				<div className="space-y-3">
 					<StatusChip status={appointment.status} />
 
-					<h1 className="text-3xl font-semibold first-letter:uppercase">
+					<h1 className="text-2xl font-semibold first-letter:uppercase sm:text-3xl">
 						{formatWhen(appointment.startTime, business.timezone)}
 					</h1>
 

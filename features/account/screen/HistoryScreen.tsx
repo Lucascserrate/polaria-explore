@@ -44,7 +44,13 @@ export function HistoryScreen({
 
 	return (
 		<Container width="wide" className="py-8 lg:py-12">
-			<div className="lg:grid lg:grid-cols-[22rem_1fr] lg:gap-10 xl:grid-cols-[24rem_1fr]">
+			{/*
+			 * Las dos columnas tienen tope y el conjunto va centrado. Con el turno en
+			 * `1fr`, el panel se estiraba a todo lo que sobrara del ancho y la foto
+			 * de arriba llegaba a medir 400px de alto: el turno se leía como la
+			 * portada de una revista y no como un comprobante.
+			 */}
+			<div className="lg:grid lg:grid-cols-[20rem_minmax(0,32rem)] lg:justify-center lg:gap-10 xl:grid-cols-[22rem_minmax(0,34rem)]">
 				<div className={cn(focus === 'detail' && 'hidden lg:block')}>
 					<h1 className="mb-6 text-3xl font-semibold">
 						{account.history.title}
