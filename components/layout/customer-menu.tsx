@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { account } from '@/content/account';
 import { site } from '@/config/site';
 import { initials } from '@/lib/initials';
@@ -16,9 +17,9 @@ import { MenuDismiss } from './menu-dismiss';
  * no un requisito.
  *
  * **Sólo lleva lo que existe.** La referencia de la que salió esto tiene ocho
- * entradas —historial, billetera, mensajes, favoritos, formularios, ajustes—;
- * ninguna tiene a dónde ir en Polaria todavía, y un menú de enlaces muertos es
- * peor que uno corto. "Mis reservas" entra acá el día que exista.
+ * entradas —historial, billetera, mensajes, favoritos, formularios, ajustes—; la
+ * única que tiene a dónde ir en Polaria es el historial, y un menú de enlaces
+ * muertos es peor que uno corto. Las demás entran el día que existan.
  *
  * "Para negocios" va al final, separado y detrás de un clic. Es el único
  * enlace del sitio que le habla al dueño de un negocio: en la barra de la raíz
@@ -70,6 +71,13 @@ export function CustomerMenu({ session }: { session: CustomerSession }) {
 				</div>
 
 				<div className="border-t border-paper-300 py-1">
+					<Link
+						href="/historial"
+						className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-paper-200"
+					>
+						{account.history.menu}
+					</Link>
+
 					{/*
 					 * Un `<form>` y no un enlace: cerrar sesión cambia estado, y un `GET`
 					 * lo puede disparar cualquier cosa que precargue direcciones,

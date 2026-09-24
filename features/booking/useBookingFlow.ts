@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { booking } from '@/content/booking';
 import {
 	ANY_STAFF,
@@ -194,7 +194,6 @@ export function useBookingFlow(
 	initialSession: CustomerSession | null,
 ) {
 	const slug = profile.slug;
-	const router = useRouter();
 	const params = useSearchParams();
 
 	const [session, setSession] = useState(initialSession);
@@ -370,8 +369,22 @@ export function useBookingFlow(
 	 * historial, y por eso el "atrás" del navegador y el gesto de volver del
 	 * teléfono hacen lo que la gente espera sin programar nada.
 	 *
-	 * `scroll: false` porque el alto no cambia entre pasos y un salto al tope en
-	 * cada toque se siente como una recarga.
+	 * **Con la API de historial del navegador y no con `router`**, y esto no es
+	 * un detalle. `router.replace` es una navegación de verdad: vuelve a pedirle
+	 * la página al servidor —perfil, sesión y turnos, tres viajes a la API— y
+	 * `useSearchParams` recién cambia cuando esa respuesta llega. Con buena
+	 * conexión no se nota; con datos móviles, tocar un servicio no marcaba nada
+	 * durante segundos y "Continuar" seguía apagado, y si la petición se caía no
+	 * se marcaba nunca. Era un error de red que parecía de un teléfono. La
+	 * página no lee los parámetros en el servidor —todo lo elegido se resuelve
+	 * acá—, así que ese viaje no traía nada. `pushState` y `replaceState` los
+	 * sincroniza Next con `useSearchParams` sin salir del navegador, y el
+	 * "atrás" sigue funcionando igual. Ver "Native History API" en la guía de
+	 * navegación de Next.
+	 *
+	 * Tampoco desplazan la pantalla, que es lo que antes pedía `scroll: false`:
+	 * el alto no cambia entre pasos y un salto al tope en cada toque se siente
+	 * como una recarga.
 	 *
 	 * `replace` es para lo que pasa **dentro** de un paso: marcar y desmarcar
 	 * servicios, o asignar profesionales de a uno. Ahí cada toque no es un paso, y
@@ -391,10 +404,10 @@ export function useBookingFlow(
 			create.reset();
 			const href = `?${next.toString()}`;
 
-			if (mode === 'replace') router.replace(href, { scroll: false });
-			else router.push(href, { scroll: false });
+			if (mode === 'replace') window.history.replaceState(null, '', href);
+			else window.history.pushState(null, '', href);
 		},
-		[create, params, router],
+		[create, params],
 	);
 
 	/*

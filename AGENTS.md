@@ -218,6 +218,12 @@ hay que dejar reservar. Nada de esto puede volverse una pantalla de error.
     más de uno —si la primera fila avanzara sola, nadie descubriría que puede
     sumarle la barba al corte—. Por lo mismo, **"Reservar" en un servicio de la
     página del negocio ya no se saltea el paso**: entra con ése tildado.
+  - **La URL del flujo se escribe con `window.history`, no con `router`.**
+    `router.replace` vuelve a pedirle la página al servidor en cada toque, y
+    `useSearchParams` no cambia hasta que llega la respuesta: con datos móviles,
+    marcar un servicio no hacía nada y "Continuar" seguía apagado. La página no
+    lee los parámetros en el servidor, así que ese viaje no traía nada. Ver
+    `navigate` en `useBookingFlow`.
   - **El orden de `?servicios=` es el orden de atención**, y no se reordena en
     ninguna capa: es el que se ve en el resumen y el que el backend encadena.
   - **`?eligiendo=` es el único estado de pantalla del flujo.** No es un
