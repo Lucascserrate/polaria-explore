@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { CalendarSync } from 'lucide-react';
+import { CalendarSync, Navigation, Store } from 'lucide-react';
 import { account } from '@/content/account';
 import {
 	formatDuration,
@@ -15,18 +15,6 @@ import { CancelAppointment } from './CancelAppointment';
 import { StatusChip } from './StatusChip';
 import type { CustomerAppointmentDetail } from '@/services/customer/types';
 
-/**
- * El turno abierto: cuándo es, qué incluye y dónde queda.
- *
- * Es el mismo panel en las dos pantallas —solo en el teléfono, al lado de la
- * lista en escritorio— y por eso no sabe nada de la ruta que lo dibuja: recibe
- * el turno y nada más. La flecha de volver la pone quien lo usa, porque en
- * escritorio no hace falta.
- *
- * **El orden responde al orden en que se pregunta**: cuándo tengo que estar
- * ahí, cómo llego, qué reservé, cuánto sale. La foto y el nombre arriba son la
- * confirmación de que es el turno que se buscaba.
- */
 export function AppointmentDetail({
 	appointment,
 }: {
@@ -55,7 +43,7 @@ export function AppointmentDetail({
 		<article className="space-y-8">
 			<header className="space-y-4">
 				{business.photoUrl && (
-					<div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-paper-200">
+					<div className="relative aspect-16/10 overflow-hidden rounded-2xl bg-paper-200">
 						<Image
 							src={business.photoUrl}
 							alt=""
@@ -82,25 +70,53 @@ export function AppointmentDetail({
 				</div>
 			</header>
 
-			{/*
-			 * Dos acciones y no una lista de siete: las que hay son las que llevan a
-			 * algún lado que existe. Ver `AGENTS.md` sobre no dibujar enlaces muertos.
-			 */}
 			<nav aria-label={account.appointment.actions.label}>
-				<ul className="overflow-hidden rounded-2xl ring-1 ring-paper-300 ring-inset">
+				<ul>
 					{directions && (
 						<li>
-							<ActionRow href={directions} external>
-								{account.appointment.actions.directions}
-							</ActionRow>
+							<a
+								href={directions}
+								target="_blank"
+								rel="noreferrer"
+								className={actionItemClasses}
+							>
+								<ActionItemContent icon={Navigation}>
+									{account.appointment.actions.directions}
+								</ActionItemContent>
+							</a>
 						</li>
 					)}
+
 					{business.slug && (
-						<li className="border-t border-paper-300 first:border-t-0">
-							<ActionRow href={`/${encodeURIComponent(business.slug)}`}>
-								{account.appointment.actions.place}
-							</ActionRow>
+						<li>
+							<Link
+								href={`/${encodeURIComponent(business.slug)}`}
+								className={actionItemClasses}
+							>
+								<ActionItemContent icon={Store}>
+									{account.appointment.actions.place}
+								</ActionItemContent>
+							</Link>
 						</li>
+					)}
+
+					{cancellable && (
+						<>
+							<li>
+								<Link
+									href={`/historial/${appointment.id}/cambiar`}
+									className={actionItemClasses}
+								>
+									<ActionItemContent icon={CalendarSync}>
+										{account.appointment.reschedule.action}
+									</ActionItemContent>
+								</Link>
+							</li>
+
+							<li>
+								<CancelAppointment appointmentId={appointment.id} />
+							</li>
+						</>
 					)}
 				</ul>
 			</nav>
@@ -197,85 +213,6 @@ export function AppointmentDetail({
 					</div>
 				</section>
 			)}
-			{/*
-			 * Al final de todo, después de lo que se viene a leer. Es la única acción
-			 * de esta pantalla que no se puede deshacer, y arriba competiría con
-			 * "cómo llegar", que es lo que casi siempre se viene a buscar.
-			 */}
-			{cancellable && (
-				<ul>
-					{/*
-					 * Cambiar antes que cancelar: quien no puede venir a esa hora casi
-					 * siempre quiere venir a otra. Ofrecer primero la salida que pierde
-					 * el turno sería empujar a la peor de las dos para el cliente y para
-					 * el negocio.
-					 */}
-					<li>
-						<Link
-							href={`/historial/${appointment.id}/cambiar`}
-							className={actionItemClasses}
-						>
-							<ActionItemContent icon={CalendarSync}>
-								{account.appointment.reschedule.action}
-							</ActionItemContent>
-						</Link>
-					</li>
-
-					<li>
-						<CancelAppointment appointmentId={appointment.id} />
-					</li>
-				</ul>
-			)}
 		</article>
-	);
-}
-
-/**
- * Una fila de la lista de acciones: texto a la izquierda, flecha a la derecha.
- *
- * Un enlace y no un botón, incluso el que abre el mapa: las dos acciones son
- * "ir a otro lado", y un botón prometería que algo pasa acá.
- */
-function ActionRow({
-	href,
-	external = false,
-	children,
-}: {
-	href: string;
-	external?: boolean;
-	children: React.ReactNode;
-}) {
-	const className =
-		'flex items-center justify-between gap-3 px-5 py-4 font-medium transition-colors hover:bg-paper-100';
-	const content = (
-		<>
-			<span>{children}</span>
-			<svg
-				aria-hidden="true"
-				viewBox="0 0 24 24"
-				className="size-4 shrink-0 text-ink-400"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			>
-				<path d="m9 18 6-6-6-6" />
-			</svg>
-		</>
-	);
-
-	if (external) {
-		return (
-			<a href={href} target="_blank" rel="noreferrer" className={className}>
-				{content}
-			</a>
-		);
-	}
-
-	return (
-		<Link href={href} className={className}>
-			{content}
-		</Link>
 	);
 }
