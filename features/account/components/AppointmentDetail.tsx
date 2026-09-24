@@ -9,6 +9,7 @@ import {
 } from '@/features/booking/format';
 import { directionsUrl } from '@/features/booking/location';
 import { formatWhen } from '../format';
+import { CancelAppointment } from './CancelAppointment';
 import { StatusChip } from './StatusChip';
 import type { CustomerAppointmentDetail } from '@/services/customer/types';
 
@@ -37,6 +38,16 @@ export function AppointmentDetail({
 	});
 
 	const several = appointment.services.length > 1;
+
+	/*
+	 * Cancelar existe sólo mientras el turno ocupa agenda y todavía no empezó, la
+	 * misma frontera que aplica el backend. No alcanza con esconder el botón —la
+	 * regla vive en `cancelByCustomerAccount`—, pero mostrarlo para algo que la
+	 * API va a rechazar es ofrecer una salida que no existe.
+	 */
+	const cancellable =
+		(appointment.status === 'pending' || appointment.status === 'confirmed') &&
+		new Date(appointment.startTime) > new Date();
 
 	return (
 		<article className="space-y-8">
@@ -184,6 +195,12 @@ export function AppointmentDetail({
 					</div>
 				</section>
 			)}
+			{/*
+			 * Al final de todo, después de lo que se viene a leer. Es la única acción
+			 * de esta pantalla que no se puede deshacer, y arriba competiría con
+			 * "cómo llegar", que es lo que casi siempre se viene a buscar.
+			 */}
+			{cancellable && <CancelAppointment appointmentId={appointment.id} />}
 		</article>
 	);
 }
