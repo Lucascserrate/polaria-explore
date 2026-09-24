@@ -36,10 +36,12 @@
 	 * reservas —confirmado, requiere atención, el foco del teclado— y por eso
 	 * siguen acá aunque la página sea en blanco y negro.
 	 */
+	--color-accent-50: #f0f9ff;
 	--color-accent-200: #bae6fd;
 	--color-accent-400: #38bdf8;
 	--color-accent-500: #0ea5e9;
 	--color-accent-600: #0284c7;
+	--color-accent-700: #0369a1;
 
 	--color-attention-50: #fffbeb;
 	--color-attention-100: #fef3c7;
@@ -52,6 +54,10 @@
 	--color-confirm-500: #10b981;
 	--color-confirm-600: #059669;
 	--color-confirm-700: #047857;
+
+	/* Lo que ya no va a pasar: hoy, sólo el turno cancelado. */
+	--color-danger-50: #fef2f2;
+	--color-danger-700: #b91c1c;
 
 	/*
 	 * Una sola familia. El contraste tipográfico lo dan el tamaño y el peso
