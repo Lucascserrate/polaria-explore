@@ -7,7 +7,18 @@ import type { BookingFlowState } from '../useBookingFlow';
 import type { PublicBusinessProfile } from '@/services/booking/types';
 
 /**
- * El turno ya está hecho: lo que queda es el comprobante.
+ * El turno ya está hecho, y quien lo hizo no tiene cuenta.
+ *
+ * **Con cuenta esta pantalla casi no se ve**: el flujo navega al turno en el
+ * historial, que es una dirección de verdad —se guarda, se vuelve a abrir y
+ * desde ahí se gestiona—, y acá sólo queda un cartel mientras esa página carga.
+ * Ver `useBookingFlow`.
+ *
+ * Sin cuenta no hay a dónde llevar a nadie: ese turno todavía no es de ninguna
+ * cuenta y el historial lo daría por inexistente. Entonces esto sigue siendo lo
+ * que era —el comprobante— y agrega el ofrecimiento de iniciar sesión, que es lo
+ * que convierte un turno suelto en uno que se puede gestionar. Al volver de
+ * Google el turno se vincula solo; ver `BookingClaimService`.
  *
  * Repite los servicios, el día y la hora en lugar de un "listo" a secas: es lo
  * que alguien mira para saber si tiene que anotarlo, y lo que busca en la
@@ -25,8 +36,21 @@ export function DoneStep({
 	profile: PublicBusinessProfile;
 	state: BookingFlowState;
 }) {
-	const { confirmation } = state;
+	const { confirmation, session } = state;
 	if (!confirmation) return null;
+
+	/*
+	 * Con sesión esto dura lo que tarde la navegación. Se dibuja algo y no una
+	 * pantalla en blanco: un instante vacío después de tocar "Confirmar" se lee
+	 * como que algo falló, justo en el momento en que hay que tranquilizar.
+	 */
+	if (session) {
+		return (
+			<p className="py-12 text-center text-ink-600">
+				{booking.flow.done.opening}
+			</p>
+		);
+	}
 
 	const several = confirmation.services.length > 1;
 
@@ -82,11 +106,33 @@ export function DoneStep({
 			</div>
 
 			{/*
+			 * El ofrecimiento va arriba de la salida y con el botón lleno: es lo que
+			 * esta pantalla propone. `returnTo` apunta al turno, así que iniciar
+			 * sesión termina justo donde se lo va a poder gestionar, y no de vuelta
+			 * en una página de reserva que ya no hace falta.
+			 */}
+			<div className="space-y-3 rounded-2xl px-5 py-5 text-left ring-1 ring-paper-300 ring-inset">
+				<p className="font-medium">{booking.flow.done.signIn.title}</p>
+				<p className="text-sm text-ink-600">{booking.flow.done.signIn.body}</p>
+
+				<Button
+					size="lg"
+					className="w-full"
+					href={`/api/customer/login?returnTo=${encodeURIComponent(
+						`/historial/${confirmation.id}`,
+					)}`}
+				>
+					{booking.flow.done.signIn.cta}
+				</Button>
+			</div>
+
+			{/*
 			 * Terminar es volver a la página del negocio, no cerrar una ventana: el
 			 * flujo es una pantalla con dirección propia, así que dejar al cliente
 			 * acá con el turno hecho sería dejarlo en una calle sin salida.
 			 */}
 			<Button
+				variant="secondary"
 				size="lg"
 				className="w-full"
 				href={`/${encodeURIComponent(profile.slug)}`}

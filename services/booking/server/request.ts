@@ -53,6 +53,26 @@ export async function request<T>(
 	path: string,
 	init?: RequestInit & FetchOptions,
 ): Promise<T> {
+	return (await requestWithCookies<T>(path, init)).data;
+}
+
+/**
+ * Como `request`, pero además con las cookies que puso la API.
+ *
+ * Existe por un solo caso y conviene que se note: al reservar **sin cuenta**, la
+ * API devuelve una cookie que dice que este navegador creó ese turno, y es lo
+ * que después permite pasárselo a la cuenta si la persona inicia sesión. La
+ * emite la API pero la tiene que guardar el navegador, y en el medio está este
+ * servidor: sin reenviarla, se pierde en el salto y quien reservó como invitado
+ * se queda sin historial para siempre.
+ *
+ * Todo lo demás de la API se lee y se devuelve como JSON, así que `request`
+ * sigue siendo la puerta normal y esto la excepción declarada.
+ */
+export async function requestWithCookies<T>(
+	path: string,
+	init?: RequestInit & FetchOptions,
+): Promise<{ data: T; setCookie: string[] }> {
 	const { revalidate, cookie, ...rest } = init ?? {};
 	const cacheable = revalidate !== undefined && !cookie;
 
@@ -73,7 +93,10 @@ export async function request<T>(
 		throw new BookingApiError(response.status, await readErrorMessage(response));
 	}
 
-	return (await response.json()) as T;
+	return {
+		data: (await response.json()) as T,
+		setCookie: response.headers.getSetCookie(),
+	};
 }
 
 /**

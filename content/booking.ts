@@ -380,6 +380,24 @@ export const booking = {
 			subtitle: (name: string) =>
 				`Te esperamos en ${name}. Si no vas a poder venir, avisale al negocio así le libera el lugar a otra persona.`,
 			close: 'Entendido',
+			/* Con cuenta, esto se ve un instante mientras se abre el turno. */
+			opening: 'Abriendo tu turno…',
+			/**
+			 * El ofrecimiento a quien reservó sin cuenta.
+			 *
+			 * Va **después** de reservar y no antes, que es la decisión: quien vino a
+			 * sacar un turno ya lo tiene, y recién ahí se le cuenta qué gana con una
+			 * cuenta. Pedirlo primero sería cobrarle un login por algo que todavía no
+			 * sabe si le sirve.
+			 *
+			 * No dice "creá una cuenta" sino qué pasa si la tiene, que es lo único
+			 * que le importa a alguien que ya consiguió lo que vino a buscar.
+			 */
+			signIn: {
+				title: 'Guardá este turno en tu cuenta',
+				body: 'Entrá con Google y vas a poder ver este turno, cambiarlo o cancelarlo cuando quieras, acá y en cualquier negocio de Polaria.',
+				cta: 'Continuar con Google',
+			},
 		},
 
 		errors: {

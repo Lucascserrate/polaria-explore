@@ -55,20 +55,32 @@ export async function POST(
   }
 
   try {
-    return Response.json(
-      await createBooking(
-        slug,
-        {
-          serviceIds,
-          ...(staffIds.length > 0 ? { staffIds } : {}),
-          startTime,
-          // Con sesión no se mandan: los pone la API desde la cuenta.
-          ...(cookie ? {} : { customerName, customerPhone }),
-        },
-        cookie,
-      ),
-      { status: 201 },
+    const { data, setCookie } = await createBooking(
+      slug,
+      {
+        serviceIds,
+        ...(staffIds.length > 0 ? { staffIds } : {}),
+        startTime,
+        // Con sesión no se mandan: los pone la API desde la cuenta.
+        ...(cookie ? {} : { customerName, customerPhone }),
+      },
+      cookie,
     );
+
+    const response = Response.json(data, { status: 201 });
+
+    /*
+     * Las cookies de la API se reenvían tal cual. Sin sesión viene una que dice
+     * que este navegador creó el turno, y es lo único que después permite
+     * pasárselo a la cuenta si la persona inicia sesión desde la pantalla de
+     * confirmación. Se copian sin mirarlas: quien decide qué poner, cuánto dura
+     * y con qué dominio es quien las firma. Ver `BookingClaimService`.
+     */
+    for (const value of setCookie) {
+      response.headers.append("set-cookie", value);
+    }
+
+    return response;
   } catch (error) {
     return toErrorResponse(error);
   }

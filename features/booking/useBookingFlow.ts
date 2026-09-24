@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { booking } from '@/content/booking';
 import {
 	ANY_STAFF,
@@ -197,6 +197,7 @@ export function useBookingFlow(
 	const params = useSearchParams();
 
 	const [session, setSession] = useState(initialSession);
+	const router = useRouter();
 
 	/* --- Lo elegido, leído de la URL --------------------------------------- */
 
@@ -345,6 +346,28 @@ export function useBookingFlow(
 	);
 
 	const create = useCreateBooking(slug);
+
+	/**
+	 * Con sesión, el final de la reserva es el turno en el historial.
+	 *
+	 * El comprobante dejó de ser un paso del flujo: era un estado en memoria que
+	 * se perdía al recargar, y lo que hay ahora es una dirección que se puede
+	 * guardar, volver a abrir y desde la que se gestiona el turno. Quien tiene
+	 * cuenta va directo ahí y no ve pantalla intermedia.
+	 *
+	 * **Sin sesión no se navega**: ese turno todavía no es de ninguna cuenta y el
+	 * historial lo daría por inexistente. A esa persona se le ofrece iniciar
+	 * sesión desde el comprobante, y el turno se vincula al volver de Google. Ver
+	 * `DoneStep` y `BookingClaimService`.
+	 *
+	 * `replace` y no `push`: volver atrás desde el historial tiene que llevar a
+	 * la página del negocio, no a un paso de confirmación que ya se cumplió y que
+	 * al tocarlo intentaría reservar de nuevo.
+	 */
+	const bookedId = create.data?.id;
+	useEffect(() => {
+		if (bookedId && session) router.replace(`/historial/${bookedId}`);
+	}, [bookedId, session, router]);
 
 	/* --- El paso, derivado ------------------------------------------------- */
 
