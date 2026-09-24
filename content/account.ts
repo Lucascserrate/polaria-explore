@@ -92,6 +92,33 @@ export const account = {
 		},
 		note: 'Información importante',
 		/**
+		 * Mover el turno de horario.
+		 *
+		 * "Cambiar el horario" y no "reagendar": es la misma cita con otra hora, y
+		 * el texto tiene que decir exactamente eso para que nadie tema perder el
+		 * turno al tocarlo. Lo que **no** cambia —los servicios y quién atiende— se
+		 * dice de frente, porque es la primera pregunta de quien reservó con
+		 * alguien en particular.
+		 */
+		reschedule: {
+			action: 'Cambiar el horario',
+			title: 'Cambiar el horario',
+			keeps: 'Se mantienen los mismos servicios y la misma persona que te atiende. Para cambiar eso, cancelá y reservá de nuevo.',
+			current: (when: string) => `Ahora es ${when}.`,
+			pickDay: 'Elegí el día',
+			pickTime: 'Elegí la hora',
+			noSlots: 'No quedan horarios ese día. Probá con otro.',
+			loading: 'Buscando horarios…',
+			confirm: (when: string) => `Mover a ${when}`,
+			pending: 'Moviendo…',
+			failed: 'No pudimos mover el turno. Probá de nuevo.',
+			back: 'Volver al turno',
+			/** Ningún día disponible en el próximo mes. */
+			noDays:
+				'No encontramos días con lugar en el próximo mes. Escribile al negocio.',
+		},
+
+		/**
 		 * Cancelar, en dos toques.
 		 *
 		 * No pregunta "¿estás seguro?" sino que dice qué pasa: el horario queda

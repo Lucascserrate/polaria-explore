@@ -200,7 +200,24 @@ export function AppointmentDetail({
 			 * de esta pantalla que no se puede deshacer, y arriba competiría con
 			 * "cómo llegar", que es lo que casi siempre se viene a buscar.
 			 */}
-			{cancellable && <CancelAppointment appointmentId={appointment.id} />}
+			{cancellable && (
+				<div className="space-y-3">
+					{/*
+					 * Cambiar antes que cancelar, y con más peso visual: quien no puede
+					 * venir a esa hora casi siempre quiere venir a otra. Ofrecer primero
+					 * la salida que pierde el turno sería empujar a la peor de las dos
+					 * para el cliente y para el negocio.
+					 */}
+					<Link
+						href={`/historial/${appointment.id}/cambiar`}
+						className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 font-medium ring-1 ring-paper-300 ring-inset transition-colors hover:bg-paper-200"
+					>
+						{account.appointment.reschedule.action}
+					</Link>
+
+					<CancelAppointment appointmentId={appointment.id} />
+				</div>
+			)}
 		</article>
 	);
 }
