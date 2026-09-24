@@ -91,6 +91,23 @@ export const account = {
 			directions: 'Abrir en el mapa',
 		},
 		note: 'Información importante',
+		/**
+		 * Cancelar, en dos toques.
+		 *
+		 * No pregunta "¿estás seguro?" sino que dice qué pasa: el horario queda
+		 * libre para otra persona y recuperarlo no depende de nosotros. Es la
+		 * información que hace falta para decidir, y "seguro" no la da.
+		 */
+		cancel: {
+			action: 'Cancelar turno',
+			question: '¿Cancelamos este turno?',
+			warning:
+				'El horario queda libre para otra persona, así que puede que no lo encuentres si cambiás de idea.',
+			confirm: 'Sí, cancelar',
+			dismiss: 'No, dejarlo',
+			pending: 'Cancelando…',
+			failed: 'No pudimos cancelarlo. Probá de nuevo.',
+		},
 		status: {
 			pending: 'Pendiente',
 			confirmed: 'Confirmada',

@@ -71,20 +71,23 @@ export function ServiceList({
 	}
 
 	/*
-	 * Una categoría que no existe se ignora en vez de dejar la lista vacía. La
-	 * URL la puede escribir cualquiera, y sobre todo: un enlace a una categoría
-	 * que el negocio borró después no puede terminar en una página que parece
-	 * decir que no hay servicios.
+	 * Los grupos entre los que se elige, y cuál está a la vista.
+	 *
+	 * **No hay "Todos".** Cada pestaña es una categoría y la primera es la que
+	 * rige al entrar, así que la lista siempre está partida: el negocio ya dijo
+	 * cómo agrupa lo que ofrece, y una pestaña que lo vuelve a mezclar todo era
+	 * la que se veía por defecto y la que menos decía.
+	 *
+	 * Una categoría que no existe cae en la primera en vez de dejar la lista
+	 * vacía. La URL la puede escribir cualquiera, y sobre todo: un enlace a una
+	 * categoría que el negocio borró después no puede terminar en una página que
+	 * parece decir que no hay servicios.
 	 */
-	const categories = profile.categories ?? [];
+	const groups = serviceGroups(profile);
+	const current =
+		groups.find((group) => group.id === activeCategory) ?? groups[0];
 
-	const active = categories.some((category) => category.id === activeCategory)
-		? activeCategory
-		: undefined;
-
-	const services = active
-		? profile.services.filter((service) => service.categoryId === active)
-		: profile.services;
+	const services = current ? current.services : profile.services;
 
 	/*
 	 * El corte va **después** de filtrar: quien entró por "Color" tiene que ver
@@ -96,7 +99,7 @@ export function ServiceList({
 
 	return (
 		<div className="space-y-4">
-			<CategoryFilter profile={profile} active={active} />
+			<CategoryFilter slug={profile.slug} groups={groups} active={current} />
 
 			<ul className="space-y-3">
 				{visible.map((service) => (
@@ -113,35 +116,74 @@ export function ServiceList({
 	);
 }
 
+/** Los servicios sin categoría, cuando el resto sí la tiene. */
+const UNCATEGORIZED = 'otros';
+
+type ServiceGroup = { id: string; name: string; services: PublicService[] };
+
 /**
- * Los filtros por categoría, como enlaces.
+ * Las categorías con algo adentro, en el orden del negocio, y al final "Otros"
+ * con lo que no tiene categoría —o tiene una que ya no existe—.
+ *
+ * **Con menos de dos grupos no hay nada que partir** y devuelve una lista
+ * vacía: la página muestra todo junto y no dibuja pestañas. Una sola pestaña,
+ * siempre elegida, es un rótulo que parece un botón.
+ *
+ * "Otros" existe desde que no hay "Todos": antes esos servicios se veían al
+ * entrar, y sin su pestaña quedarían sin ningún lugar donde aparecer.
+ */
+function serviceGroups(profile: PublicBusinessProfile): ServiceGroup[] {
+	const categories = profile.categories ?? [];
+	const known = new Set(categories.map((category) => category.id));
+
+	const groups: ServiceGroup[] = categories
+		.map((category) => ({
+			id: category.id,
+			name: category.name,
+			services: profile.services.filter(
+				(service) => service.categoryId === category.id,
+			),
+		}))
+		.filter((group) => group.services.length > 0);
+
+	const loose = profile.services.filter(
+		(service) => !service.categoryId || !known.has(service.categoryId),
+	);
+
+	if (loose.length > 0) {
+		groups.push({
+			id: UNCATEGORIZED,
+			name: booking.services.uncategorized,
+			services: loose,
+		});
+	}
+
+	return groups.length > 1 ? groups : [];
+}
+
+/**
+ * Las pestañas de categoría, como enlaces.
  *
  * Enlaces y no botones con estado, igual que el filtro de rubros y que
  * "Reservar": la página del negocio no tiene JavaScript propio, y con esto
  * sigue sin tenerlo. De paso cada categoría queda con dirección propia, así que
  * un negocio puede mandar "mirá los tintes" y caer con el filtro puesto.
  *
- * No se dibuja si no hay más de un grupo que distinguir: con una sola categoría
- * y nada fuera de ella, los dos filtros muestran exactamente lo mismo.
- *
- * Tampoco hay una píldora de "otros". Los servicios sin categoría no quedan
- * escondidos porque "Todos" es lo que rige al entrar, así que agregar una
- * píldora más sólo sumaría ruido a la fila.
+ * **La primera va a la dirección sin parámetro**, que es la que rige al entrar:
+ * si llevara `?categoria=`, la misma lista tendría dos direcciones, y la del
+ * negocio a secas —la que se comparte y la que indexa Google— dejaría de ser la
+ * de ninguna pestaña.
  */
 function CategoryFilter({
-	profile,
+	slug,
+	groups,
 	active,
 }: {
-	profile: PublicBusinessProfile;
-	active?: string;
+	slug: string;
+	groups: ServiceGroup[];
+	active?: ServiceGroup;
 }) {
-	const categories = profile.categories ?? [];
-	const hasUncategorized = profile.services.some(
-		(service) => !service.categoryId,
-	);
-	const groups = categories.length + (hasUncategorized ? 1 : 0);
-
-	if (groups < 2) return null;
+	if (groups.length === 0) return null;
 
 	return (
 		/*
@@ -162,24 +204,16 @@ function CategoryFilter({
 		 * líneas.
 		 */
 		<div className="-mx-5 flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
-			<Chip
-				href={profileHref(profile.slug)}
-				active={active === undefined}
-				scroll={false}
-			>
-				{booking.services.allCategories}
-			</Chip>
-
-			{categories.map((category) => (
+			{groups.map((group, index) => (
 				<Chip
-					key={category.id}
-					href={profileHref(profile.slug, category.id)}
-					active={active === category.id}
+					key={group.id}
+					href={profileHref(slug, index === 0 ? undefined : group.id)}
+					active={active?.id === group.id}
 					// La lista ya está a la vista: saltar arriba al filtrar haría
 					// perder de vista justo lo que se acaba de pedir.
 					scroll={false}
 				>
-					{category.name}
+					{group.name}
 				</Chip>
 			))}
 		</div>

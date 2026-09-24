@@ -64,7 +64,7 @@ export const booking = {
 
 	services: {
 		title: 'Servicios',
-		allCategories: 'Todos',
+		uncategorized: 'Otros',
 		empty:
 			'Este negocio todavía no publicó sus servicios. Volvé a intentar más tarde.',
 		book: 'Reservar',
